@@ -1,0 +1,1260 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Operación Pika-Rescate: El Reino de los Procesos de Prueba</title>
+<meta name="description" content="Juego educativo sobre los modelos de proceso de pruebas de software CTP y STEP.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;500;600;700&family=Press+Start+2P&display=swap" rel="stylesheet">
+<style>
+/* ============================ ESTILOS ============================ */
+:root{--sky:#5C94FC;--panel:#FFF8E1;--ink:#1B1B2F;--pika:#FFD60A;--red:#E52521;--green:#43B047;--brick:#C84C0C;--coin:#F8B800;--ok:#2BB673;--bad:#E63946;--mut:#4e4e66;
+--pixel:"Press Start 2P",ui-monospace,Menlo,Consolas,monospace;--body:"Pixelify Sans",ui-monospace,Menlo,Consolas,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{font-family:var(--body);color:var(--ink);font-size:18px;line-height:1.5;letter-spacing:.01em;min-height:100vh;padding:78px 14px 100px;
+ background:linear-gradient(180deg,#4A86F7 0%,var(--sky) 50%,#8DB7FF 100%) fixed}
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+/* --- cielo, colinas y suelo --- */
+.sky{position:fixed;inset:0;z-index:-1;pointer-events:none;overflow:hidden}
+.cloud{position:absolute;left:0;width:110px;height:34px;background:#fff;border-radius:30px;box-shadow:0 4px 0 rgba(27,27,47,.12);animation:drift linear infinite}
+.cloud::before,.cloud::after{content:'';position:absolute;background:#fff;border-radius:50%}
+.cloud::before{width:50px;height:50px;top:-26px;left:16px}
+.cloud::after{width:38px;height:38px;top:-18px;left:56px}
+@keyframes drift{from{transform:translateX(-160px)}to{transform:translateX(110vw)}}
+.hill{position:absolute;bottom:40px;background:var(--green);border:4px solid var(--ink);border-bottom:none;border-radius:50% 50% 0 0}
+.hill::after{content:'';position:absolute;width:8px;height:16px;background:var(--ink);border-radius:4px;top:30%;left:40%;box-shadow:22px -6px 0 var(--ink)}
+.ground{position:fixed;left:0;right:0;bottom:0;height:46px;z-index:-1;background-color:var(--brick);
+ background-image:linear-gradient(rgba(27,27,47,.55) 2px,transparent 2px),linear-gradient(90deg,rgba(27,27,47,.55) 2px,transparent 2px);
+ background-size:36px 18px;border-top:8px solid var(--green);box-shadow:0 -4px 0 var(--ink)}
+
+/* --- HUD --- */
+#hud{position:fixed;top:0;left:0;right:0;z-index:50;display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--ink);color:#fff;border-bottom:4px solid #000}
+#hud .logo{font-family:var(--pixel);font-size:12px;color:var(--pika);white-space:nowrap}
+#hlevel{font-size:14px;color:#d6d9ff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;flex:1}
+.hp{font-family:var(--pixel);font-size:10px;background:#2c2c4a;border:2px solid #55557f;border-radius:6px;padding:6px 8px;white-space:nowrap}
+#hlocks .short{display:none}
+@media(max-width:700px){#hlevel{visibility:hidden} #hud .logo .full{display:none} #hlocks .full{display:none} #hlocks .short{display:inline}}
+
+/* --- base --- */
+main#app{max-width:980px;margin:0 auto;position:relative}
+.panel{background:var(--panel);border:4px solid var(--ink);border-radius:8px;box-shadow:6px 6px 0 var(--ink);padding:22px}
+h1,h2,h3{font-family:var(--pixel);line-height:1.45;margin:0 0 12px;font-weight:400}
+h1{font-size:clamp(18px,4.2vw,32px);text-shadow:3px 3px 0 var(--pika)} h2{font-size:clamp(14px,2.6vw,20px)} h3{font-size:12px}
+.kick{font-family:var(--pixel);font-size:10px;color:var(--brick);letter-spacing:.06em;text-transform:uppercase}
+.mut{color:var(--mut)} .small{font-size:14px}
+.row{display:flex;flex-wrap:wrap;gap:14px;align-items:center} .row.c{justify-content:center}
+.center{text-align:center}
+.big{font-size:64px;line-height:1.1}
+ul.list{padding-left:22px;margin:8px 0} ul.list li{margin:6px 0}
+[tabindex="-1"]:focus{outline:none}
+:focus-visible{outline:3px dashed var(--red);outline-offset:3px}
+
+/* --- botones tipo bloque ? --- */
+.btn{font-family:var(--pixel);font-size:11px;line-height:1.5;color:var(--ink);background:var(--pika);border:3px solid var(--ink);border-radius:6px;padding:12px 16px;cursor:pointer;
+ box-shadow:0 5px 0 var(--ink);transition:transform .08s,box-shadow .08s,filter .1s;position:relative}
+.btn:hover:not(:disabled){filter:brightness(1.06)}
+.btn:active:not(:disabled){transform:translateY(5px);box-shadow:0 0 0 var(--ink)}
+.btn.red{background:var(--red);color:#fff}
+.btn.ghost{background:#fff}
+.btn.sm{font-size:9px;padding:8px 10px}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+
+/* --- portada --- */
+.hero{display:grid;grid-template-columns:1fr auto;gap:20px;align-items:center}
+@media(max-width:720px){.hero{grid-template-columns:1fr}.cagebox{justify-self:center}}
+.cage{width:130px;height:140px;border:5px solid var(--ink);border-radius:60px 60px 6px 6px;background:repeating-linear-gradient(90deg,transparent 0 18px,var(--ink) 18px 23px),#FFF3B0;display:grid;place-items:center;font-size:56px;position:relative;box-shadow:6px 6px 0 rgba(27,27,47,.25)}
+.cage .padl{position:absolute;bottom:-18px;left:50%;transform:translateX(-50%);font-size:30px}
+.cage.open{background:#FFF3B0}
+.cast-row{display:flex;flex-wrap:wrap;gap:8px;margin:16px 0}
+.mini{display:inline-flex;gap:8px;align-items:center;background:#fff;border:3px solid var(--ink);border-radius:999px;padding:3px 12px 3px 3px;font-weight:800;font-size:14px}
+.mini .av{width:34px;height:34px;font-size:17px;border-width:2px}
+.av{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;font-size:22px;white-space:nowrap;letter-spacing:-3px;border:3px solid var(--ink);background:#fff;flex:none}
+.howto{background:#fff;border:3px solid var(--ink);border-radius:8px;padding:14px 18px;margin-top:6px}
+.disc{font-size:13px;color:var(--mut);margin-top:22px;border-top:3px dashed #d8cfb0;padding-top:12px}
+.credits{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:13px;margin-top:10px;color:var(--mut)}
+.credits .nm{background:#fff;color:var(--ink);border:2px solid var(--ink);border-radius:999px;padding:1px 10px;font-weight:800}
+
+/* --- mapa --- */
+.mapwrap{position:relative;display:grid;grid-template-columns:repeat(3,1fr);gap:34px 30px;padding:8px 4px}
+@media(max-width:760px){.mapwrap{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:470px){.mapwrap{grid-template-columns:1fr}}
+.mapwrap svg{position:absolute;left:0;top:0;z-index:0;pointer-events:none}
+.tile{position:relative;z-index:1;font-family:var(--body);color:var(--ink);background:var(--panel);border:4px solid var(--ink);border-radius:8px;box-shadow:5px 5px 0 var(--ink);padding:14px 10px;text-align:center;cursor:pointer;transition:transform .12s}
+.tile:hover:not(:disabled){transform:translateY(-4px)}
+.tile .n{font-family:var(--pixel);font-size:9px;background:var(--ink);color:var(--pika);display:inline-block;padding:5px 8px;border-radius:4px}
+.tile .e{font-size:40px;line-height:1.2;margin:8px 0 4px}
+.tile b{display:block;font-size:15px;line-height:1.3;min-height:40px}
+.tile .stars{font-size:22px;color:var(--coin);text-shadow:1px 1px 0 var(--ink);letter-spacing:3px}
+.tile.lock{filter:grayscale(1);opacity:.7;cursor:not-allowed}
+.tile.done{background:#E6FAEC}
+.tile.final{background:#FFE1D2}
+.tile .badge{position:absolute;top:-12px;right:-10px;background:var(--green);color:#fff;border:3px solid var(--ink);border-radius:50%;width:30px;height:30px;display:grid;place-items:center;font-weight:900}
+.bar{height:18px;background:#fff;border:3px solid var(--ink);border-radius:6px;overflow:hidden}
+.bar i{display:block;height:100%;width:0;background:repeating-linear-gradient(45deg,var(--green) 0 10px,#61cc64 10px 20px);transition:width .45s}
+.bar.bossbar i{background:repeating-linear-gradient(45deg,#F77F00 0 10px,#ff9d33 10px 20px)}
+
+/* --- historia --- */
+.place{font-size:14px;font-weight:800;color:var(--mut);margin-bottom:14px}
+.talk{display:flex;gap:18px;align-items:flex-start}
+.who{display:flex;flex-direction:column;align-items:center;gap:8px;min-width:100px;text-align:center}
+.who .av{width:78px;height:78px;font-size:38px;border-width:4px}
+.who b{font-family:var(--pixel);font-size:9px;line-height:1.5}
+.bubble{flex:1;background:#fff;border:4px solid var(--ink);border-radius:10px;padding:16px 18px 26px;min-height:160px;font-size:18px;position:relative;cursor:pointer}
+.bubble::before{content:'';position:absolute;left:-20px;top:28px;border:10px solid transparent;border-right-color:var(--ink)}
+.bubble .more{position:absolute;right:12px;bottom:6px;font-size:12px;animation:blink 1s steps(2) infinite}
+@keyframes blink{50%{opacity:0}}
+@media(max-width:560px){.talk{flex-direction:column}.who{flex-direction:row;min-width:0}.who .av{width:56px;height:56px;font-size:28px}.bubble{width:100%}.bubble::before{display:none}}
+.ctrl{display:flex;align-items:center;gap:12px;margin-top:18px}
+.dots{flex:1;display:flex;gap:6px;justify-content:center;flex-wrap:wrap}
+.dots i{width:12px;height:12px;border:2px solid var(--ink);background:#fff;border-radius:2px}
+.dots i.on{background:var(--green)} .dots i.cur{background:var(--pika);transform:scale(1.3)}
+.scroll{background:#F5E6C8;border:4px solid #7a4a1c;border-radius:6px;padding:16px;box-shadow:inset 0 0 0 4px #ead6ad}
+.scroll h3{color:#6b3f14}
+.tblw{overflow-x:auto}
+table.tbl{width:100%;border-collapse:collapse;font-size:15px;background:#fffaf0}
+.tbl th,.tbl td{border:2px solid #7a4a1c;padding:8px 10px;text-align:left;vertical-align:top}
+.tbl th{background:#7a4a1c;color:#fff}
+.chalk{background:#1F4D3A;border:10px solid #8B5A2B;border-radius:6px;color:#F4F7EF;padding:16px}
+.chalk h3{color:var(--pika)}
+.chalk pre{font-family:ui-monospace,Menlo,Consolas,"Courier New",monospace;font-size:14px;line-height:1.45;white-space:pre;overflow-x:auto;margin:0}
+
+/* --- inventario --- */
+.chip{display:inline-block;background:var(--pika);border:3px solid var(--ink);border-radius:999px;padding:4px 12px;margin:4px;font-weight:800;font-size:14px}
+
+/* --- preguntas --- */
+.qtop{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:12px}
+.qtop .sp{flex:1}
+.pill{background:#fff;border:3px solid var(--ink);border-radius:6px;padding:5px 10px;font-weight:800;font-size:14px}
+.hearts{font-size:22px;letter-spacing:2px}
+.boss{display:flex;align-items:center;gap:10px;margin-bottom:12px;background:#FFE1D2;border:3px solid var(--ink);border-radius:8px;padding:8px 12px}
+.boss .bar{flex:1}
+.boss b{font-family:var(--pixel);font-size:10px;white-space:nowrap}
+.q{font-size:20px;font-weight:800;margin-bottom:14px;line-height:1.4}
+.opts{display:grid;gap:10px}
+.opt{position:relative;display:flex;gap:12px;align-items:center;text-align:left;font-family:var(--body);font-size:17px;font-weight:600;color:var(--ink);background:#fff;border:3px solid var(--ink);border-radius:8px;padding:11px 14px;cursor:pointer;box-shadow:0 4px 0 var(--ink)}
+.opt .l{font-family:var(--pixel);font-size:11px;width:34px;height:34px;flex:none;display:grid;place-items:center;background:var(--pika);border:3px solid var(--ink);border-radius:4px}
+.opt:hover:not(:disabled){background:#FFFBE6}
+.opt:disabled{cursor:default}
+.opt.ok{background:#D7F7E3;border-color:#0f5f33}.opt.ok .l{background:#14733f;color:#fff}
+.opt.no{background:#FDE0E2}.opt.no .l{background:#b3202b;color:#fff}
+.opt.gone{visibility:hidden}
+.hintbox{margin-top:12px;background:#E8F7E8;border:3px dashed var(--green);border-radius:8px;padding:10px 12px;font-weight:700}
+.fb{display:flex;gap:12px;align-items:flex-start;margin-top:14px;padding:12px;border:3px solid var(--ink);border-radius:8px}
+.fb.ok{background:#D7F7E3}.fb.no{background:#FDE0E2}.fb.pk{background:#FFF6C2}
+.fb b{display:block}
+.coinpop{position:absolute;right:18px;top:-4px;font-size:26px;animation:coin .8s ease-out forwards;pointer-events:none}
+@keyframes coin{0%{transform:translateY(0);opacity:1}60%{transform:translateY(-46px)}100%{transform:translateY(-62px);opacity:0}}
+.shake{animation:shake .4s}
+@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-8px)}40%{transform:translateX(8px)}60%{transform:translateX(-6px)}80%{transform:translateX(6px)}}
+.pop{animation:pop .3s ease-out}
+@keyframes pop{from{transform:scale(.97);opacity:0}to{transform:none;opacity:1}}
+
+/* --- resultado --- */
+.stars-big{font-size:46px;color:var(--coin);text-shadow:2px 2px 0 var(--ink);letter-spacing:6px}
+.stat{display:inline-block;margin:6px;padding:10px 14px;background:#fff;border:3px solid var(--ink);border-radius:8px;min-width:120px}
+.stat b{display:block;font-family:var(--pixel);font-size:13px;margin-bottom:4px}
+.lockbox{font-size:64px;position:relative;display:inline-block;width:100px;height:90px}
+.lockbox .lk{display:inline-block;animation:wiggle .5s ease-in-out}
+.lockbox .bolt{position:absolute;inset:0;display:grid;place-items:center;font-size:80px;opacity:0;animation:bolt .8s ease-out .35s forwards}
+@keyframes wiggle{25%{transform:rotate(-12deg)}75%{transform:rotate(12deg)}}
+@keyframes bolt{0%{opacity:0;transform:scale(.4)}40%{opacity:1;transform:scale(1.15)}100%{opacity:0;transform:scale(1.6)}}
+.flash{position:fixed;inset:0;background:#FFF6A8;pointer-events:none;animation:flash .7s ease-out forwards;z-index:60}
+@keyframes flash{from{opacity:.75}to{opacity:0}}
+.gameover{font-family:var(--pixel);font-size:clamp(22px,5vw,36px);color:var(--red);text-shadow:3px 3px 0 var(--ink)}
+.rescue{font-size:90px;display:inline-block;animation:jump 1s ease-in-out infinite}
+@keyframes jump{50%{transform:translateY(-22px)}}
+
+/* --- mini-reto --- */
+.pool{display:flex;flex-wrap:wrap;gap:8px;min-height:60px;padding:10px;background:#fff;border:3px dashed var(--ink);border-radius:8px}
+.zones{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;margin-top:14px}
+.zone{background:#EAF2FF;border:3px solid var(--ink);border-radius:8px;padding:10px;min-height:130px;cursor:pointer;display:flex;flex-direction:column;gap:6px}
+.zone.over{background:#FFF3B0}
+.zone .zh{width:100%;margin-bottom:4px}
+.rcard{font-family:var(--body);font-weight:700;font-size:15px;color:var(--ink);background:var(--panel);border:3px solid var(--ink);border-radius:6px;padding:7px 10px;cursor:grab;box-shadow:0 3px 0 var(--ink);text-align:left}
+.zone .rcard{width:100%}
+.rcard.sel{background:var(--pika);transform:translateY(-2px)}
+.rcard.ok{background:#D7F7E3}.rcard.no{background:#FDE0E2}
+.rcard small{display:block;font-weight:700;color:#8a1520}
+
+/* --- modal --- */
+.modal-bg{position:fixed;inset:0;background:rgba(27,27,47,.6);display:grid;place-items:center;z-index:100;padding:16px}
+.modal{max-width:440px;width:100%}
+
+/* --- zona bonus: menú de minijuegos --- */
+.bonus-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(240px,1fr));
+  gap:16px;
+  margin-top:14px;
+}
+.bonus-card{
+  font-family:var(--body);
+  color:var(--ink);
+  text-align:left;
+  background:#fff;
+  border:4px solid var(--ink);
+  border-radius:8px;
+  box-shadow:5px 5px 0 var(--ink);
+  padding:16px;
+  cursor:pointer;
+  transition:transform .12s;
+}
+.bonus-card:hover{transform:translateY(-4px)}
+.bonus-card .e{font-size:44px;line-height:1.2}
+.bonus-card b{display:block;font-size:18px;margin:6px 0}
+.bonus-card .best{
+  display:inline-block;
+  margin-top:8px;
+  background:var(--pika);
+  border:2px solid var(--ink);
+  border-radius:999px;
+  padding:2px 10px;
+  font-weight:800;
+  font-size:13px;
+}
+
+/* --- minijuego: Aplasta los Bugs --- */
+.whack-top{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  align-items:center;
+  margin-bottom:14px;
+}
+.whack-grid{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:14px;
+  max-width:460px;
+  margin:0 auto;
+}
+.hole{
+  position:relative;
+  height:110px;
+  background:linear-gradient(180deg,#6fd36f 0 28%,var(--green) 28% 100%);
+  border:4px solid var(--ink);
+  border-radius:10px 10px 4px 4px;
+  cursor:pointer;
+  overflow:hidden;
+  font-size:48px;
+  display:grid;
+  place-items:center;
+  padding:0;
+}
+.hole::before{
+  content:'';
+  position:absolute;
+  left:12%;
+  right:12%;
+  bottom:10px;
+  height:22px;
+  background:var(--ink);
+  border-radius:50%;
+}
+.hole .mole{
+  position:relative;
+  transform:translateY(120%);
+  transition:transform .15s ease-out;
+}
+.hole.up .mole{transform:translateY(0)}
+.hole.hit{background:linear-gradient(180deg,#fff3a0 0 28%,var(--pika) 28% 100%)}
+.hole.ouch{background:linear-gradient(180deg,#ffb3b8 0 28%,var(--bad) 28% 100%)}
+.float-pts{
+  position:absolute;
+  top:6px;
+  left:50%;
+  transform:translateX(-50%);
+  font-family:var(--pixel);
+  font-size:11px;
+  color:var(--ink);
+  animation:coin .7s ease-out forwards;
+  pointer-events:none;
+}
+
+/* --- minijuego: Memoria de conceptos --- */
+.memo-grid{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:10px;
+}
+@media(max-width:560px){.memo-grid{grid-template-columns:repeat(3,1fr)}}
+.memo{
+  min-height:96px;
+  font-family:var(--body);
+  font-weight:800;
+  font-size:14px;
+  line-height:1.3;
+  color:var(--ink);
+  background:var(--brick);
+  background-image:linear-gradient(rgba(27,27,47,.45) 2px,transparent 2px),linear-gradient(90deg,rgba(27,27,47,.45) 2px,transparent 2px);
+  background-size:24px 12px;
+  border:3px solid var(--ink);
+  border-radius:6px;
+  box-shadow:0 4px 0 var(--ink);
+  cursor:pointer;
+  padding:8px;
+}
+.memo .face{display:none}
+.memo .back{font-family:var(--pixel);font-size:22px;color:var(--pika);text-shadow:2px 2px 0 var(--ink)}
+.memo.open,.memo.done{background:#fff;background-image:none}
+.memo.open .face,.memo.done .face{display:block}
+.memo.open .back,.memo.done .back{display:none}
+.memo.done{background:#D7F7E3;cursor:default}
+.memo.term .face{font-family:var(--pixel);font-size:11px}
+
+/* --- confeti de celebración --- */
+.confetti{
+  position:fixed;
+  top:-20px;
+  width:10px;
+  height:14px;
+  z-index:70;
+  pointer-events:none;
+  border:1px solid var(--ink);
+  animation:fall linear forwards;
+}
+@keyframes fall{
+  0%{transform:translateY(0) rotate(0deg);opacity:1}
+  100%{transform:translateY(105vh) rotate(720deg);opacity:.9}
+}
+
+/* --- toque 8-bit en todo el texto --- */
+b,strong{font-weight:700}
+.q{font-size:21px;letter-spacing:.02em}
+.bubble{font-size:19px;letter-spacing:.02em}
+.stat b,.tile .n,.pill{letter-spacing:.04em}
+.pill{font-family:var(--pixel);font-size:10px;padding:8px 10px}
+.chip{font-family:var(--pixel);font-size:9px;padding:7px 12px}
+.tbl th{font-family:var(--pixel);font-size:10px;font-weight:400}
+.kick,.stars-big,.stat b{image-rendering:pixelated}
+
+@media (prefers-reduced-motion: reduce){*,*::before,*::after{animation:none!important;transition:none!important}.flash{display:none}}
+</style>
+</head>
+<body>
+<div class="sky" aria-hidden="true">
+  <div class="cloud" style="top:14%;animation-duration:70s;animation-delay:-10s"></div>
+  <div class="cloud" style="top:32%;animation-duration:95s;animation-delay:-50s;transform:scale(.8)"></div>
+  <div class="cloud" style="top:56%;animation-duration:80s;animation-delay:-30s"></div>
+  <div class="cloud" style="top:76%;animation-duration:110s;animation-delay:-80s"></div>
+  <div class="hill" style="left:4%;width:180px;height:90px"></div>
+  <div class="hill" style="right:6%;width:240px;height:120px"></div>
+</div>
+<div class="ground" aria-hidden="true"></div>
+
+<header id="hud">
+  <span class="logo">⚡<span class="full"> Pika-Rescate</span></span>
+  <span id="hlevel"></span>
+  <span class="hp" id="hcoins" aria-label="Monedas">🪙 0</span>
+  <span class="hp" id="htime" aria-label="Tiempo de juego">⏱ 00:00</span>
+  <span class="hp" id="hlocks"></span>
+</header>
+<main id="app"></main>
+
+<script>
+/* ============================ PERSONAJES ============================ */
+var CH={
+  M:{n:'Mario',e:'🍄',c:'#E52521'},
+  L:{n:'Link',e:'🗡️',c:'#3FA34D'},
+  Y:{n:'Yoshi',e:'🦖',c:'#7ED957'},
+  K:{n:'Kirby',e:'🌸',c:'#FF8FC7'},
+  D:{n:'Donkey Kong',e:'🦍',c:'#8B5A2B'},
+  P:{n:'Pikachu',e:'⚡',c:'#FFD60A'},
+  B:{n:'Bowser',e:'🐢🔥',c:'#F77F00'}
+};
+var EQUIPO=['Sergio Alvarez','Pablo Sánchez','Osvaldo Potoy','Maiquel Jimenez'];
+function pz(t,lines){return ['pizarra',t,lines.join('\n')];}
+
+/* ============================ NIVELES ============================
+   escena: ['M','texto'] | ['pergamino','Título',[[encabezados],[fila],...]] | ['pizarra','Título','texto ASCII']
+   pregunta: [enunciado, CORRECTA, mala1, mala2, mala3, explicación, pista]  (el juego las baraja) */
+var LV=[
+/* ---------- MUNDO 1-1 ---------- */
+{t:'¿Por qué mejorar el proceso de pruebas?',e:'🍄',mundo:'1-1',lugar:'Reino Champiñón, frente al castillo vacío',
+ escenas:[
+ ['M','¡Mamma mia! Bowser y Mewtwo se llevaron a Pikachu al Castillo de los Bugs. La jaula tiene 8 cerraduras y cada una solo se abre si demostramos que dominamos los modelos de proceso de pruebas: CTP y STEP.'],
+ ['P','¡Pika pika! Estoy bien, pero esta jaula está llena de bugs… ¡Apúrense, por favor!'],
+ ['D','¡Fácil! Probar es solo ejecutar unos casos al final, un día antes de entregar. ¡Banana y listo!'],
+ ['L','Ahí está el error, DK. Probar no es una actividad suelta al final: es un proceso completo, con planificación, preparación, ejecución y mejora continua.'],
+ ['K','Y si ese proceso es malo, los defectos se escapan a producción, se gasta más dinero y nadie puede predecir cuándo termina el proyecto.'],
+ ['M','Por eso existen los modelos de mejora del proceso de pruebas. Sirven para encontrar más defectos antes, reducir costos y que el equipo sea predecible.'],
+ ['pergamino','Dos familias de modelos de mejora (clasificación ISTQB)',[
+   ['Familia','Ejemplos','¿Cómo funcionan?'],
+   ['Basados en proceso / madurez','TMMi, TPI Next','Definen niveles o etapas que se suben en orden.'],
+   ['Basados en contenido','CTP, STEP','Describen buenas prácticas y actividades; no imponen un orden. La organización decide qué mejorar primero.']]],
+ ['Y','Piénsenlo así: TMMi es como un juego lineal, no puedes saltarte el mundo 2 para ir al 5. CTP y STEP son como un mundo abierto: tienes el mapa de buenas prácticas y escoges por dónde empezar según lo que más te duele.'],
+ ['K','Ojo: ningún modelo elimina todos los bugs. Lo que hacen es ordenar el trabajo para encontrarlos antes y con menos esfuerzo.'],
+ ['L','Hoy aprenderemos dos modelos basados en contenido: CTP, de Rex Black, y STEP, de Bill Hetzel y SQE. ¡Cada uno abre cerraduras distintas!']
+ ],
+ resumen:{pts:['Probar es un proceso: planificar, preparar, ejecutar y mejorar.','Mejorar el proceso = encontrar defectos antes, reducir costos y ser predecibles.','Modelos basados en proceso/madurez (TMMi, TPI Next): niveles que se suben en orden.','Modelos basados en contenido (CTP, STEP): buenas prácticas, sin orden impuesto.','Ningún modelo garantiza cero defectos.'],powerups:['Proceso de pruebas','TMMi','TPI Next','Modelos basados en contenido']},
+ preguntas:[
+ ['¿Cuál es el principal objetivo de mejorar el proceso de pruebas?','Encontrar defectos antes, reducir costos y hacer el trabajo más predecible','Eliminar por completo la necesidad de probar','Garantizar que el software no tenga ningún defecto','Reducir el equipo de pruebas a una sola persona','Mejorar el proceso hace las pruebas más eficaces y predecibles; ningún modelo garantiza cero defectos.','Piensa en tiempo, dinero y defectos encontrados a tiempo.'],
+ ['¿Qué modelos pertenecen a la familia «basados en contenido»?','CTP y STEP','TMMi y TPI Next','CTP y TMMi','STEP y TPI Next','CTP y STEP describen buenas prácticas sin imponer un orden; TMMi y TPI Next son de proceso/madurez.','Son los dos modelos protagonistas de este juego.'],
+ ['¿Qué caracteriza a un modelo basado en proceso o madurez, como TMMi?','Define niveles o etapas que se recorren en orden','Deja que cada organización mejore en el orden que quiera','Solo sirve para pruebas de rendimiento','Se aplica únicamente después de salir a producción','Los modelos de madurez avanzan nivel por nivel, como un juego lineal.','Recuerda el ejemplo del juego lineal de Yoshi.'],
+ ['¿Qué caracteriza a un modelo basado en contenido?','Describe buenas prácticas y la organización decide qué mejorar primero','Obliga a completar el nivel 2 antes del nivel 3','Solo mide la velocidad del código','Reemplaza por completo al equipo de pruebas','Es como un mundo abierto: tienes el mapa y eliges por dónde empezar.','Mundo abierto vs. juego lineal.'],
+ ['DK dice: «Probar es solo ejecutar casos el último día antes de entregar». ¿Cuál es su error?','Probar es un proceso completo con planificación, preparación, ejecución y mejora','Ninguno: así lo recomiendan CTP y STEP','Que debería probar dos días antes en vez de uno','Que las pruebas solo las debe hacer el cliente','Las pruebas son un proceso que acompaña todo el proyecto, no una actividad suelta al final.','¿Probar es una actividad suelta o un proceso?'],
+ ['¿Cuál de estos es un modelo basado en proceso o madurez?','TPI Next','CTP','STEP','DDP','TPI Next y TMMi son de proceso/madurez. CTP y STEP son de contenido, y el DDP es una métrica.','Su nombre incluye la palabra «Next».']
+ ]},
+/* ---------- MUNDO 1-2 ---------- */
+{t:'CTP: los procesos que sí importan',e:'🗡️',mundo:'1-2',lugar:'Bosque Perdido de Hyrule',
+ escenas:[
+ ['M','Primera parada: el Bosque Perdido. Dicen que aquí solo encuentra el camino quien sabe qué es lo realmente importante.'],
+ ['L','Perfecto para hablar de CTP: Critical Testing Processes, o Procesos Críticos de Prueba. Lo propuso Rex Black en su libro «Critical Testing Processes», publicado en 2003.'],
+ ['D','¿Críticos? Entonces todos los procesos de prueba son críticos… ¡Hay que mejorar TODO al mismo tiempo!'],
+ ['L','No, DK. La idea central de CTP es justo la contraria: no todos los procesos pesan igual. Hay algunos críticos que determinan si las pruebas salen bien o mal.'],
+ ['pergamino','¿Cuándo un proceso es crítico según CTP?',[
+   ['Criterio','Ejemplo'],
+   ['Se repite con frecuencia','Reportar bugs ocurre todos los días.'],
+   ['Afecta la cooperación entre equipos','La entrega de versiones entre desarrollo y QA.'],
+   ['Es visible para los stakeholders','Los reportes de resultados que lee la gerencia.'],
+   ['Influye directamente en el éxito del proyecto','El análisis de riesgos que decide qué se prueba.']]],
+ ['K','Ejemplo práctico: si el equipo reporta bugs confusos todos los días, los desarrolladores pierden horas tratando de reproducirlos. Ese proceso se repite mucho y afecta la cooperación: ¡es crítico!'],
+ ['Y','Y si el reporte final que ve la gerencia es un desorden, todo el mundo se entera. Ser visible para los stakeholders también lo vuelve crítico.'],
+ ['L','Otra ventaja: CTP es adaptable. Cada organización lo ajusta a su contexto: tamaño del equipo, tipo de producto y riesgos.'],
+ ['M','¡Como Link con su inventario! No usa todos los objetos a la vez: escoge el que necesita para cada mazmorra.'],
+ ['P','¡Pika! ¡Una cerradura empieza a brillar! ¡Sigan así!']
+ ],
+ resumen:{pts:['CTP = Critical Testing Processes, de Rex Black (2003).','No todos los procesos pesan igual: algunos son críticos.','Crítico = frecuente, afecta la cooperación, visible para stakeholders o clave para el éxito.','CTP es adaptable al contexto de cada organización.'],powerups:['CTP','Rex Black','Procesos críticos','Stakeholders']},
+ preguntas:[
+ ['¿Quién propuso el modelo CTP?','Rex Black','Bill Hetzel','Rick Craig','Glenford Myers','Rex Black lo presentó en «Critical Testing Processes» (2003). Bill Hetzel está detrás de STEP.','Su apellido es un color.'],
+ ['¿Qué significa CTP?','Critical Testing Processes (Procesos Críticos de Prueba)','Complete Test Planning','Continuous Testing Pipeline','Certified Test Professional','La «C» viene de crítico: el modelo se enfoca en los procesos que más impactan.','La C es de «crítico».'],
+ ['¿Cuál es la idea central de CTP?','No todos los procesos pesan igual: hay que enfocarse en los críticos','Todos los procesos deben mejorarse al mismo tiempo','Solo importan las pruebas automatizadas','Las pruebas se diseñan antes de escribir los requerimientos','CTP prioriza los procesos que determinan el éxito. Diseñar pruebas desde el inicio es más propio de STEP.','DK quería mejorar TODO a la vez… y se equivocó.'],
+ ['¿Cuál NO es un criterio para que un proceso sea crítico en CTP?','Que use la herramienta de pruebas más cara del mercado','Que se repita con frecuencia','Que sea visible para los stakeholders','Que afecte la cooperación entre equipos','Los criterios son frecuencia, cooperación, visibilidad e impacto en el éxito; el precio de una herramienta no cuenta.','Busca la opción que habla de dinero, no de impacto.'],
+ ['QA reporta bugs confusos todos los días y desarrollo pierde horas reproduciéndolos. Según CTP, ese proceso es…','Crítico, porque se repite con frecuencia y afecta la cooperación','Irrelevante, porque los bugs siempre existen','Crítico, solo porque lo ve el cliente final','Un proceso del nivel 5 de TMMi','Cumple dos criterios de CTP: frecuencia y cooperación entre equipos.','Cuenta cuántos criterios de la tabla cumple.'],
+ ['¿Qué significa que CTP sea «adaptable»?','Que cada organización lo ajusta a su contexto, tamaño y riesgos','Que se puede usar únicamente en proyectos ágiles','Que cambia de nombre según el país','Que sus procesos se eligen al azar','CTP no es una receta rígida: se adapta a la realidad de cada organización.','Como Link escogiendo el objeto de su inventario.']
+ ]},
+/* ---------- MUNDO 2-1 ---------- */
+{t:'Las 4 fases y los 12 procesos de CTP',e:'⏳',mundo:'2-1',lugar:'Templo del Tiempo',
+ escenas:[
+ ['L','Bienvenidos al Templo del Tiempo. Aquí todo sigue un ciclo, igual que CTP: Planificar, Preparar, Ejecutar y Perfeccionar. En inglés: Plan, Prepare, Perform y Perfect.'],
+ ['K','¡Las 4 P! Así es facilísimo de recordar.'],
+ pz('El ciclo de CTP',[
+  '  ┌───────────────┐      ┌───────────────┐',
+  '  │ 1. PLANIFICAR │ ───▶ │ 2. PREPARAR   │',
+  '  │    (Plan)     │      │   (Prepare)   │',
+  '  └───────▲───────┘      └───────┬───────┘',
+  '          │                      ▼',
+  '  ┌───────┴───────┐      ┌───────────────┐',
+  '  │4.PERFECCIONAR │ ◀─── │ 3. EJECUTAR   │',
+  '  │   (Perfect)   │      │   (Perform)   │',
+  '  └───────────────┘      └───────────────┘']),
+ ['L','Dentro del ciclo hay 12 procesos críticos. El primero, «Pruebas», es el proceso general que envuelve a todos. Los otros 11 se reparten entre las 4 fases.'],
+ ['pergamino','Los 12 procesos críticos de CTP',[
+   ['Fase','Procesos'],
+   ['General','1. Pruebas (el proceso completo)'],
+   ['Planificar','2. Establecer el contexto · 3. Análisis de riesgos de calidad · 4. Estimación de pruebas · 5. Planificación de pruebas'],
+   ['Preparar','6. Desarrollo del equipo de pruebas · 7. Desarrollo del sistema de pruebas (casos, datos y ambientes)'],
+   ['Ejecutar','8. Gestión de entregas (releases) a prueba · 9. Ejecución de pruebas'],
+   ['Perfeccionar','10. Reporte de defectos · 11. Reporte de resultados · 12. Gestión de cambios']]],
+ ['D','¿Y por qué «Desarrollo del equipo» está en Preparar? ¡Yo pensé que los equipos se arman solos, como una pila de barriles!'],
+ ['Y','Nada de eso, DK. Antes de ejecutar hay que preparar a las personas (contratar, capacitar) y al sistema de pruebas: casos, datos y ambientes. Sin eso, ejecutar es lanzar barriles a ciegas.'],
+ ['K','En Ejecutar, el equipo recibe las versiones del software de forma ordenada (gestión de entregas) y corre las pruebas. En Perfeccionar se reportan los bugs, se comunican los resultados y se gestionan los cambios.'],
+ ['L','Fíjense en que Perfeccionar cierra el ciclo: lo aprendido vuelve a la planificación del siguiente ciclo.'],
+ ['M','¡Wahoo! Después del inventario viene un mini-reto: hay que clasificar cada proceso en su fase. ¡Let\'s-a go!']
+ ],
+ resumen:{pts:['Ciclo de 4 fases: Planificar, Preparar, Ejecutar, Perfeccionar (Plan, Prepare, Perform, Perfect).','El proceso 1, «Pruebas», es el proceso general.','Planificar (2–5): contexto, riesgos de calidad, estimación y planificación.','Preparar (6–7): equipo de pruebas y sistema de pruebas.','Ejecutar (8–9): gestión de entregas y ejecución.','Perfeccionar (10–12): reporte de defectos, reporte de resultados y gestión de cambios.'],powerups:['Plan · Prepare · Perform · Perfect','Análisis de riesgos de calidad','Sistema de pruebas','Gestión de cambios']},
+ reto:{titulo:'Clasifica cada proceso de CTP en su fase',cats:['Planificar','Preparar','Ejecutar','Perfeccionar'],items:[
+   ['Establecer el contexto',0],['Análisis de riesgos de calidad',0],['Estimación de pruebas',0],['Planificación de pruebas',0],
+   ['Desarrollo del equipo de pruebas',1],['Desarrollo del sistema de pruebas',1],
+   ['Gestión de entregas a prueba',2],['Ejecución de pruebas',2],
+   ['Reporte de defectos',3],['Reporte de resultados',3],['Gestión de cambios',3]]},
+ preguntas:[
+ ['¿Cuáles son las 4 fases del ciclo de CTP?','Planificar, Preparar, Ejecutar y Perfeccionar','Planificar, Adquirir, Medir y Cerrar','Analizar, Diseñar, Codificar y Probar','Inicial, Gestionado, Definido y Optimizado','En inglés: Plan, Prepare, Perform, Perfect. Las otras opciones mezclan STEP, el modelo en cascada y niveles de madurez.','Las 4 P en inglés.'],
+ ['¿En qué fase de CTP está el «Análisis de riesgos de calidad»?','Planificar','Preparar','Ejecutar','Perfeccionar','Los riesgos se analizan al planificar, antes de estimar y armar el plan de pruebas.','Se hace antes de estimar y escribir el plan.'],
+ ['¿Qué incluye el proceso «Desarrollo del sistema de pruebas»?','Crear los casos de prueba, los datos y los ambientes','Programar las funcionalidades del producto','Contratar a los clientes que usarán el sistema','Comprar servidores para producción','Es el «sistema» con el que se prueba (casos, datos, ambientes), no el producto en sí.','Es el sistema con el que se prueba, no el producto.'],
+ ['«Reporte de defectos», «Reporte de resultados» y «Gestión de cambios» pertenecen a la fase…','Perfeccionar','Planificar','Preparar','Ejecutar','Son los procesos 10, 11 y 12, que cierran el ciclo de CTP.','La fase que cierra el ciclo.'],
+ ['¿Qué papel tiene el proceso 1, «Pruebas», dentro de CTP?','Es el proceso general que engloba a los otros 11','Es el último paso, después de la gestión de cambios','Es una fase opcional para proyectos pequeños','Es la métrica principal del modelo','«Pruebas» es el paraguas que contiene a todos los demás procesos críticos.','Piensa en un paraguas.'],
+ ['DK dice: «Los equipos de prueba se arman solos, no hace falta prepararlos». ¿Qué proceso de CTP lo contradice?','Desarrollo del equipo de pruebas, en la fase Preparar','Gestión de cambios, en la fase Perfeccionar','Estimación de pruebas, en la fase Ejecutar','Reporte de resultados, en la fase Planificar','Preparar a las personas (contratar y capacitar) es el proceso 6, dentro de Preparar.','Busca la opción que habla del «equipo».']
+ ]},
+/* ---------- MUNDO 2-2 ---------- */
+{t:'Evaluar con CTP: métricas y entrevistas',e:'🍌',mundo:'2-2',lugar:'Isla DK, junto al montón de bananas',
+ escenas:[
+ ['D','¡Bienvenidos a mi isla! Aquí contamos bananas todo el día. ¿CTP también cuenta cosas?'],
+ ['L','Claro. Para saber qué mejorar, CTP evalúa el proceso combinando dos tipos de evidencia: métricas cuantitativas y entrevistas o análisis cualitativo.'],
+ ['K','Las métricas dan números; las entrevistas dan contexto. Un número solo no explica por qué pasa algo: hay que conversar con pruebas, desarrollo y gerencia.'],
+ ['L','La métrica emblemática de CTP es el DDP: Defect Detection Percentage, o porcentaje de detección de defectos. Mide qué tan eficaz es el equipo encontrando bugs antes de que lleguen al usuario.'],
+ pz('Cómo calcular el DDP',[
+  '            defectos encontrados por las pruebas',
+  'DDP = ────────────────────────────────────────────────── × 100',
+  '       defectos en pruebas + defectos encontrados después',
+  '                              (p. ej., en producción)',
+  '',
+  'Ejemplo:  80 en pruebas · 20 en producción',
+  'DDP = 80 / (80 + 20) × 100 = 80 %']),
+ ['D','¡80 %! Eso es como 80 bananas de cada 100. ¿Y las otras 20?'],
+ ['Y','Esas 20 se escaparon a producción y las encontraron los usuarios. Entre más alto es el DDP, mejor filtra el proceso de pruebas.'],
+ ['K','Además del DDP, CTP revisa otras evidencias: la cobertura de riesgos (¿probamos lo más riesgoso?), el cumplimiento de las estimaciones (¿terminamos cuando dijimos?) y la calidad de los reportes de defectos.'],
+ ['L','Y no olviden el análisis de riesgos de calidad: guía qué probar primero y con qué profundidad. Lo más riesgoso se prueba antes y más a fondo.'],
+ ['M','Al final, la evaluación produce recomendaciones de mejora, y la propia organización decide cuáles atacar primero. Así funciona un modelo basado en contenido.'],
+ ['P','¡Pika pika! ¡Ya se abrieron varias cerraduras! Ahora vayan con Yoshi, ¡él sabe de STEP!']
+ ],
+ resumen:{pts:['Evaluación CTP = métricas cuantitativas + entrevistas o análisis cualitativo.','DDP = defectos en pruebas ÷ (en pruebas + encontrados después) × 100.','Ejemplo: 80 en pruebas y 20 en producción → DDP = 80 %.','Otras evidencias: cobertura de riesgos, cumplimiento de estimaciones y calidad de los reportes de defectos.','El análisis de riesgos guía qué probar primero y con qué profundidad.','La organización prioriza las recomendaciones de mejora.'],powerups:['DDP','Métricas cuantitativas','Entrevistas','Cobertura de riesgos']},
+ preguntas:[
+ ['¿Qué combina la evaluación de un proceso con CTP?','Métricas cuantitativas y entrevistas o análisis cualitativo','Solo encuestas de satisfacción del cliente','Solo el número de líneas de código','Una auditoría que asigna un nivel de madurez del 1 al 5','Los números muestran qué pasa; las entrevistas explican por qué.','Números + conversaciones.'],
+ ['¿Qué mide el DDP?','El porcentaje de defectos que las pruebas encuentran antes de que se escapen','La cantidad de días que dura el proyecto','El porcentaje de código cubierto por pruebas unitarias','El número de desarrolladores por cada tester','Defect Detection Percentage: qué parte del total de defectos atrapó el proceso de pruebas.','Defect Detection Percentage.'],
+ ['Las pruebas encontraron 90 defectos y en producción aparecieron 10 más. ¿Cuál es el DDP?','90 %','10 %','80 %','100 %','90 ÷ (90 + 10) × 100 = 90 %.','Divide los defectos de pruebas entre el total.'],
+ ['Las pruebas encontraron 60 defectos y los usuarios reportaron 40 en producción. ¿Qué indica el DDP?','DDP = 60 %: muchos defectos se escapan y conviene mejorar el proceso','DDP = 40 %: el proceso es excelente','DDP = 150 %: se encontraron demasiados bugs','DDP = 100 %: no hace falta mejorar nada','60 ÷ (60 + 40) × 100 = 60 %. Cuatro de cada diez defectos llegaron al usuario.','60 de un total de 100.'],
+ ['¿Para qué sirve el análisis de riesgos de calidad en CTP?','Para decidir qué probar primero y con qué profundidad','Para calcular el salario del equipo de pruebas','Para eliminar la necesidad de reportar defectos','Para escoger el lenguaje de programación','Lo más riesgoso se prueba antes y con más profundidad.','Lo más riesgoso va primero.'],
+ ['Tras una evaluación con CTP, ¿quién decide qué recomendaciones aplicar primero?','La propia organización, según sus necesidades','El modelo, que impone un orden fijo de niveles','Rex Black, mediante una certificación obligatoria','El cliente final, por votación','CTP es un modelo basado en contenido: no impone un orden de mejora.','Recuerda la familia a la que pertenece CTP.']
+ ]},
+/* ---------- MUNDO 3-1 ---------- */
+{t:'STEP: probar desde el inicio',e:'🥚',mundo:'3-1',lugar:'Isla de Yoshi',
+ escenas:[
+ ['Y','¡Yoshi! Bienvenidos a mi isla. Aquí todo empieza desde el huevo… igual que las pruebas en STEP.'],
+ ['M','STEP significa Systematic Test and Evaluation Process: Proceso Sistemático de Prueba y Evaluación. Lo desarrollaron Bill Hetzel y la empresa SQE (Software Quality Engineering).'],
+ ['K','Y lo hicieron muy conocido Rick Craig y Stefan Jaskiel con su libro «Systematic Software Testing», de 2002.'],
+ ['Y','STEP es una metodología de pruebas basada en requerimientos: los requerimientos son el punto de partida para diseñar las pruebas.'],
+ ['D','¡Ah, ya sé! Primero programo todo y luego vemos qué probar. ¡Así se hace en mi isla!'],
+ ['Y','No, DK. En STEP las pruebas empiezan al inicio del ciclo de vida, no al final. Su lema es «test then code»: primero se diseñan las pruebas y después se programa.'],
+ ['pergamino','Principios de STEP',[
+   ['Principio','¿Qué significa?'],
+   ['Probar desde el inicio','Las pruebas arrancan junto con los requerimientos.'],
+   ['Test then code','Las pruebas se diseñan antes de programar.'],
+   ['Pruebas como modelo','Los casos de prueba describen los requerimientos y el uso del sistema.'],
+   ['Descubrir ambigüedades','Diseñar pruebas revela requerimientos confusos o incompletos.'],
+   ['Detección temprana','Los defectos se encuentran antes y se analizan sistemáticamente.']]],
+ ['K','Ejemplo: el requerimiento dice «el sistema debe responder rápido». Al diseñar la prueba, Yoshi pregunta: ¿qué tan rápido? ¿En menos de 2 segundos? ¡Encontramos una ambigüedad antes de escribir una sola línea de código!'],
+ ['L','Eso es poderoso: corregir un requerimiento en papel cuesta muchísimo menos que corregir un defecto que llegó a producción.'],
+ ['P','¡Pika! ¡Yoshi, eres un genio! ¡Otra cerradura más!']
+ ],
+ resumen:{pts:['STEP = Systematic Test and Evaluation Process.','Creado por Bill Hetzel y SQE; difundido por Craig y Jaskiel (2002).','Es una metodología de pruebas basada en requerimientos.','Las pruebas empiezan al inicio del ciclo de vida: «test then code».','Los casos de prueba sirven como modelo de requerimientos y de uso.','Diseñar pruebas temprano revela requerimientos ambiguos.'],powerups:['STEP','Bill Hetzel · SQE','Test then code','Basado en requerimientos']},
+ preguntas:[
+ ['¿Qué significa STEP?','Systematic Test and Evaluation Process','Software Testing Execution Plan','Standard Test Estimation Procedure','Structured Technical Evaluation Program','Proceso Sistemático de Prueba y Evaluación.','Sistemático + prueba + evaluación.'],
+ ['¿Quiénes desarrollaron STEP?','Bill Hetzel y SQE (Software Quality Engineering)','Rex Black y su equipo','El comité del ISTQB en 2010','Kent Beck y la comunidad ágil','STEP viene de Hetzel y SQE; Craig y Jaskiel lo difundieron en 2002. Rex Black es el autor de CTP.','La empresa tiene las siglas SQE.'],
+ ['¿En qué se basa STEP para diseñar las pruebas?','En los requerimientos','En el código ya terminado','En los reportes de producción','En la opinión del tester más antiguo','STEP es una metodología de pruebas basada en requerimientos.','Es una metodología «basada en ___».'],
+ ['¿Qué significa «test then code» en STEP?','Diseñar las pruebas antes de escribir el código','Programar primero y probar solo al final','Probar únicamente el código de otros equipos','Escribir código de prueba en lugar de documentación','Primero se diseñan las pruebas; así se detectan problemas en los requerimientos antes de programar.','Fíjate en el orden de las palabras.'],
+ ['DK dice: «Primero programo todo y luego vemos qué probar». ¿Qué principio de STEP rompe?','Que las pruebas empiezan al inicio del ciclo de vida','Que hay que medir el DDP cada semana','Que los procesos críticos deben priorizarse','Que solo se prueba en producción','En STEP las pruebas arrancan junto con los requerimientos, no al final.','¿Cuándo empiezan las pruebas en STEP?'],
+ ['Al diseñar una prueba para «el sistema debe responder rápido», el equipo pregunta «¿qué tan rápido?». ¿Qué beneficio de STEP muestra esto?','Diseñar pruebas temprano revela requerimientos ambiguos','Reduce el número de testers necesarios','Elimina la necesidad de documentar','Permite saltarse las pruebas de sistema','«Rápido» no se puede probar; al intentar diseñar la prueba aparece la ambigüedad.','«Rápido» no es medible.']
+ ]},
+/* ---------- MUNDO 3-2 ---------- */
+{t:'Las 3 actividades de STEP',e:'🌿',mundo:'3-2',lugar:'Ruta Pokémon 1',
+ escenas:[
+ ['M','Llegamos a la Ruta Pokémon 1. Igual que un entrenador, STEP avanza por etapas: son 3 grandes actividades.'],
+ pz('Las 3 actividades de STEP',[
+  ' 1. PLANIFICAR LA ESTRATEGIA',
+  '    └─ Plan Maestro de Pruebas + planes detallados por nivel',
+  '               │',
+  '               ▼',
+  ' 2. ADQUIRIR EL TESTWARE',
+  '    └─ Inventariar objetivos · Diseñar · Implementar',
+  '               │',
+  '               ▼',
+  ' 3. MEDIR',
+  '    └─ Ejecutar · Verificar la adecuación · Evaluar']),
+ ['Y','Primero: Planificar la estrategia. Se crea el Plan Maestro de Pruebas, que da la visión general, y después planes detallados por nivel: unitarias, integración, sistema y aceptación.'],
+ ['D','¿Testware? ¿Eso es como una Pokébola para atrapar bugs?'],
+ ['K','¡Casi, DK! El testware es todo lo que se produce para probar: objetivos, diseños, casos, procedimientos y datos de prueba. La segunda actividad, Adquirir el testware, tiene tres pasos: inventariar los objetivos de prueba, diseñar las pruebas e implementar los planes y diseños.'],
+ ['L','La tercera es Medir: ejecutar las pruebas, verificar si el conjunto de pruebas es adecuado (¿cubre lo necesario?) y evaluar tanto el software como el propio proceso de pruebas.'],
+ ['pergamino','Documentación en la que se apoya STEP (IEEE 829)',[
+   ['Documento','¿Para qué sirve?'],
+   ['Plan de pruebas','Alcance, enfoque, recursos y calendario.'],
+   ['Especificación de diseño de pruebas','Qué características se prueban y cómo.'],
+   ['Especificación de casos de prueba','Entradas, condiciones y resultados esperados.'],
+   ['Especificación de procedimientos','Los pasos para ejecutar las pruebas.'],
+   ['Reporte de incidentes','Registro de cada defecto o anomalía.'],
+   ['Reporte resumen','Resultados finales y evaluación.']]],
+ ['Y','STEP se apoya en esa documentación estándar del IEEE 829. Así todo queda trazable y nadie pierde el rumbo.'],
+ ['K','Truco para recordar: Planificar → Adquirir → Medir. Como un entrenador: planea su ruta, arma su equipo y luego mide su fuerza en el gimnasio.'],
+ ['P','¡Pika pika! ¡Ahora toca el mini-reto de clasificar!']
+ ],
+ resumen:{pts:['3 actividades: Planificar la estrategia, Adquirir el testware y Medir.','Planificar: Plan Maestro + planes por nivel (unitarias, integración, sistema, aceptación).','Adquirir: inventariar objetivos, diseñar e implementar.','Medir: ejecutar, verificar la adecuación y evaluar el software y el proceso.','La documentación se basa en el estándar IEEE 829.'],powerups:['Plan Maestro de Pruebas','Testware','IEEE 829','Adecuación de las pruebas']},
+ reto:{titulo:'Clasifica cada tarea en su actividad de STEP',cats:['Planificar estrategia','Adquirir testware','Medir'],items:[
+   ['Crear el Plan Maestro de Pruebas',0],['Hacer planes detallados por nivel',0],
+   ['Inventariar los objetivos de prueba',1],['Diseñar las pruebas',1],['Implementar planes y diseños',1],
+   ['Ejecutar las pruebas',2],['Verificar la adecuación del conjunto de pruebas',2],['Evaluar el software y el proceso',2]]},
+ preguntas:[
+ ['¿Cuáles son las 3 actividades de STEP?','Planificar la estrategia, Adquirir el testware y Medir','Planificar, Preparar, Ejecutar y Perfeccionar','Diseñar, Codificar e Implantar','Inicial, Definido y Optimizado','Planificar → Adquirir → Medir. La segunda opción es el ciclo de CTP.','P → A → M.'],
+ ['¿Qué documento da la visión general de todas las pruebas en STEP?','El Plan Maestro de Pruebas','El reporte de incidentes','La especificación de procedimientos','El DDP','El Plan Maestro guía todo; luego se detalla por nivel.','Su nombre incluye «Maestro».'],
+ ['¿Qué es el «testware»?','Todo lo que se produce para probar: objetivos, diseños, casos, procedimientos y datos','Un antivirus para los servidores de prueba','El hardware donde corre producción','Una herramienta exclusiva de Rex Black','Testware = los productos de trabajo de las pruebas.','Software + test.'],
+ ['«Verificar la adecuación del conjunto de pruebas» pertenece a la actividad…','Medir','Planificar la estrategia','Adquirir el testware','Ninguna: no forma parte de STEP','En Medir se ejecuta, se verifica si las pruebas cubren lo necesario y se evalúa.','Se hace cuando ya hay resultados.'],
+ ['¿En qué estándar de documentación se apoya STEP?','IEEE 829','ISO 27001','OWASP Top 10','WCAG 2.2','IEEE 829 define planes, especificaciones y reportes de pruebas.','Es un estándar del IEEE.'],
+ ['DK diseñó casos de prueba, pero nunca inventarió los objetivos de prueba. ¿Qué actividad de STEP quedó incompleta?','Adquirir el testware','Medir','Planificar la estrategia','Gestión de cambios','Adquirir el testware = inventariar objetivos, diseñar e implementar.','Inventariar, diseñar, implementar.']
+ ]},
+/* ---------- MUNDO 4-1 ---------- */
+{t:'Evaluar con STEP',e:'💧',mundo:'4-1',lugar:'Gimnasio de Ciudad Celeste',
+ escenas:[
+ ['K','¡Estamos en el Gimnasio de Ciudad Celeste! Aquí se mide quién está listo. Hoy vamos a medir un proceso con STEP.'],
+ ['L','Primero, algo importante: igual que CTP, STEP es un modelo basado en contenido. No exige un orden fijo de mejora; cada organización decide por dónde empezar.'],
+ ['Y','Para evaluar, STEP usa métricas cuantitativas, como las tendencias de defectos y la fase en que se encontraron, y también entrevistas o cuestionarios cualitativos.'],
+ ['D','¿Y para qué importa en qué fase se encontró un bug? ¡Un bug es un bug!'],
+ ['M','¡Mamma mia, DK! Importa muchísimo. Un defecto cuesta más cuanto más tarde se encuentra: arreglar un requerimiento en papel es barato; arreglarlo en producción es carísimo.'],
+ pz('Costo de un defecto según cuándo se encuentra (ilustrativo)',[
+  'Requerimientos ▏██                  $',
+  'Diseño         ▏████                $$',
+  'Código         ▏███████             $$$',
+  'Pruebas        ▏███████████         $$$$',
+  'Producción     ▏██████████████████  $$$$$$',
+  '',
+  'La tendencia es lo importante: entre más tarde, más caro.']),
+ ['K','Por eso STEP insiste en probar temprano. Si las métricas muestran que la mayoría de defectos aparece en producción, el proceso necesita fortalecer sus primeras etapas.'],
+ ['L','Otra pieza clave es el análisis de defectos: buscar la causa raíz de cada tipo de defecto. Así no solo se corrige el bug, sino que se evita que se repita en futuros proyectos.'],
+ ['Y','Ejemplo: si muchos defectos vienen de requerimientos ambiguos, la causa raíz está en cómo se escriben los requerimientos. La mejora: revisarlos y diseñar las pruebas desde el inicio.'],
+ ['P','¡Pika! ¡Solo quedan dos cerraduras! ¡Ya casi salgo!']
+ ],
+ resumen:{pts:['STEP también es basado en contenido: no hay orden fijo de mejora.','Evaluación: métricas cuantitativas + entrevistas o cuestionarios cualitativos.','Métricas típicas: tendencias de defectos y fase en que se encontraron.','Análisis de defectos = buscar causas raíz para prevenirlos.','Un defecto cuesta más cuanto más tarde se encuentra.'],powerups:['Análisis de causa raíz','Tendencias de defectos','Cuestionarios','Costo del defecto']},
+ preguntas:[
+ ['¿Qué tipo de modelo es STEP, igual que CTP?','Basado en contenido, sin un orden fijo de mejora','Basado en madurez, con 5 niveles obligatorios','Un modelo exclusivo para metodologías ágiles','Una herramienta de automatización de pruebas','STEP y CTP son de la misma familia: describen buenas prácticas sin imponer un orden.','La misma familia que CTP.'],
+ ['¿Qué métricas cuantitativas usa STEP para evaluar?','Las tendencias de defectos y la fase en que se encontraron','Solo la cantidad de reuniones del equipo','El número de colores de la interfaz','La velocidad de escritura de los testers','Saber cuándo se encuentran los defectos muestra qué etapas del proceso hay que fortalecer.','Defectos + fase.'],
+ ['¿Para qué sirve el análisis de defectos en STEP?','Para encontrar causas raíz y prevenir defectos en futuros proyectos','Para culpar al desarrollador que cometió el error','Para borrar los defectos del registro','Para aumentar el número de bugs reportados','Atacar la causa raíz evita que el mismo tipo de defecto vuelva a aparecer.','Piensa en la «raíz».'],
+ ['DK dice: «Un bug es un bug, no importa cuándo se encuentre». ¿Por qué se equivoca?','Porque un defecto cuesta más cuanto más tarde se encuentra','Porque los bugs en producción son siempre más fáciles de corregir','Porque los bugs encontrados temprano no cuentan en las métricas','Porque STEP prohíbe encontrar bugs en producción','Corregir un requerimiento en papel es barato; un defecto en producción es carísimo.','Piensa en el costo.'],
+ ['Las métricas muestran que el 70 % de los defectos se encuentra en producción. Según STEP, ¿qué conviene hacer?','Fortalecer las primeras etapas: revisar requerimientos y diseñar pruebas antes','Esperar a que los usuarios sigan reportando','Eliminar las pruebas de aceptación','Contratar más soporte técnico y no tocar el proceso','STEP busca detectar defectos temprano: «test then code».','Test then code.'],
+ ['Además de métricas, ¿qué evidencia cualitativa usa STEP?','Entrevistas y cuestionarios','El número de commits por día','El tamaño de la base de datos','El tiempo de carga de la página','Lo cualitativo viene de hablar con las personas del proceso.','Hablar con personas.']
+ ]},
+/* ---------- MUNDO 4-2 ---------- */
+{t:'CTP vs STEP: elige tu power-up',e:'⚔️',mundo:'4-2',lugar:'Estadio Smash',
+ escenas:[
+ ['M','Último mundo antes del castillo: el Estadio Smash. Aquí se enfrentan CTP y STEP… ¡no para pelear, sino para ver cuándo conviene usar cada uno!'],
+ ['pergamino','CTP vs STEP',[
+   ['','CTP','STEP'],
+   ['Autor','Rex Black (2003)','Bill Hetzel y SQE; difundido por Craig y Jaskiel (2002)'],
+   ['Enfoque','Priorizar los procesos críticos','Sistematizar y adelantar las pruebas desde los requerimientos'],
+   ['Estructura','4 fases y 12 procesos','3 actividades'],
+   ['Evaluación','Métricas (p. ej., DDP) + entrevistas','Métricas (tendencias de defectos) + entrevistas'],
+   ['Tipo de modelo','Basado en contenido','Basado en contenido']]],
+ ['K','¿En qué se parecen? Los dos son modelos basados en contenido, son flexibles y se pueden combinar entre sí o con modelos de madurez como TMMi o TPI Next.'],
+ ['D','¡Entonces tengo que escoger solo uno para siempre! Yo escojo… ¡el de las bananas!'],
+ ['L','No hace falta escoger uno solo, DK. Depende del problema. Veamos dos escenarios.'],
+ ['K','Escenario 1: el equipo tiene muchos bugs en producción y poco tiempo. Conviene CTP: identificar los procesos críticos, priorizarlos y medir el DDP para ver si mejora.'],
+ ['Y','Escenario 2: el proyecto apenas inicia y los requerimientos cambian mucho. Conviene STEP: diseñar las pruebas desde los requerimientos para descubrir ambigüedades temprano.'],
+ ['M','Y en un proyecto grande se pueden combinar: STEP para arrancar las pruebas temprano y CTP para enfocarse en los procesos que más impactan.'],
+ pz('Regla para recordar',[
+  '  CTP  →  C de CRÍTICO',
+  '          «¿Qué procesos mejoro primero?»',
+  '',
+  '  STEP →  S de SISTEMÁTICO y TEMPRANO',
+  '          «¿Cómo pruebo desde el inicio?»']),
+ ['P','¡PIKA PIKA! ¡Todas las cerraduras brillan! ¡Solo falta vencer a Bowser!']
+ ],
+ resumen:{pts:['CTP prioriza procesos críticos; STEP sistematiza y adelanta las pruebas desde los requerimientos.','CTP: 4 fases y 12 procesos · STEP: 3 actividades.','Ambos evalúan con métricas + entrevistas.','Ambos son basados en contenido, flexibles y combinables (también con TMMi o TPI Next).','Muchos bugs en producción y poco tiempo → CTP. Proyecto que inicia con requerimientos cambiantes → STEP.'],powerups:['CTP = Crítico','STEP = Sistemático','Combinar modelos','Escenarios']},
+ preguntas:[
+ ['¿Cuál es el enfoque de cada modelo?','CTP prioriza procesos críticos; STEP sistematiza y adelanta las pruebas desde los requerimientos','CTP diseña pruebas antes del código; STEP prioriza procesos críticos','Ambos son modelos de madurez con 5 niveles','CTP solo evalúa rendimiento y STEP solo seguridad','C de crítico; S de sistemático y temprano.','C de crítico, S de sistemático.'],
+ ['¿En qué se parecen CTP y STEP?','Ambos son modelos basados en contenido, flexibles y combinables','Ambos fueron creados por Rex Black','Ambos tienen exactamente 12 procesos','Ambos exigen subir niveles en orden','Son de la misma familia y se pueden combinar entre sí o con TMMi/TPI Next.','Piensa en la familia de modelos.'],
+ ['Un equipo tiene muchos bugs en producción y poco tiempo para mejorar. ¿Qué modelo conviene más?','CTP: priorizar los procesos críticos y medir el DDP','STEP: reescribir todos los requerimientos desde cero','Ninguno: mejor esperar al siguiente proyecto','TMMi: alcanzar el nivel 5 antes de corregir nada','Con poco tiempo hay que enfocarse en lo crítico y medir si mejora.','Poco tiempo → enfocarse en lo crítico.'],
+ ['Un proyecto apenas inicia y sus requerimientos cambian mucho. ¿Qué modelo conviene más?','STEP: diseñar pruebas desde los requerimientos para detectar ambigüedades','CTP: medir el DDP de producción, aunque aún no haya producción','Ninguno: no se prueba hasta que el código esté listo','Solo pruebas de carga al final del proyecto','STEP brilla al inicio: «test then code».','Inicio + requerimientos.'],
+ ['¿Cuál es la estructura de cada modelo?','CTP: 4 fases y 12 procesos · STEP: 3 actividades','CTP: 3 actividades · STEP: 4 fases y 12 procesos','Ambos: 5 niveles de madurez','CTP: 8 cerraduras · STEP: 12 jefes','Plan-Prepare-Perform-Perfect con 12 procesos vs. Planificar-Adquirir-Medir.','4 y 12 contra 3.'],
+ ['DK dice: «Hay que escoger un solo modelo para siempre». ¿Qué es lo correcto?','Se pueden combinar CTP, STEP e incluso modelos de madurez según el problema','Es correcto: está prohibido mezclar modelos','Solo se puede usar STEP si antes se usó TMMi','Hay que cambiar de modelo cada semana','Son flexibles: se eligen y combinan según el contexto.','Son flexibles.']
+ ]},
+/* ---------- FINAL ---------- */
+{t:'Batalla en el Castillo de Bowser',e:'🏰',mundo:'FINAL',lugar:'Castillo de los Bugs, sala del trono',final:true,
+ escenas:[
+ ['B','¡GWAHAHA! Llegaron hasta mi castillo. Pikachu está en mi jaula de bugs y no la abrirán… ¡a menos que respondan mis preguntas!'],
+ ['P','¡Pika pika! ¡No le tengan miedo! ¡Ustedes ya saben todo!'],
+ ['M','Equipo, cada respuesta correcta le quita vida a Bowser. Tenemos 3 corazones y 12 preguntas. ¡Let\'s-a go!'],
+ ['L','Recuerden: CTP es crítico. 4 fases, 12 procesos y el DDP para medir.'],
+ ['Y','Y STEP es sistemático y temprano: Planificar, Adquirir y Medir, «test then code» y documentación IEEE 829.'],
+ ['D','¡Y yo aprendí que no se prueba solo al final! ¡A darle!'],
+ ['B','¡GRRR! ¡Ya veremos! ¡Prepárense para mis preguntas de fuego!']
+ ],
+ resumen:{pts:['Modelos basados en contenido: CTP y STEP. Modelos de madurez: TMMi y TPI Next.','CTP (Rex Black): procesos críticos, 4 fases (Plan, Prepare, Perform, Perfect), 12 procesos, DDP.','STEP (Hetzel/SQE): basado en requerimientos, «test then code», 3 actividades (Planificar, Adquirir, Medir), IEEE 829.','Ambos evalúan con métricas y entrevistas, y se pueden combinar.'],powerups:['Todo lo aprendido','12 preguntas','3 corazones']},
+ preguntas:[
+ ['Bowser lanza un caso: «Mi castillo tiene 50 defectos encontrados en pruebas y 50 en producción». ¿Cuál es su DDP y qué significa?','50 %: la mitad de los defectos se escapa, así que el proceso debe mejorar','100 %: el proceso es perfecto','0 %: no se encontró ningún defecto','25 %: lo mejor es dejar de probar','50 ÷ (50 + 50) × 100 = 50 %.','Divide los de pruebas entre el total.'],
+ ['Bowser quiere mejorar sus pruebas, pero este mes solo puede atacar 2 procesos. ¿Qué modelo le ayuda a escogerlos?','CTP, priorizando los procesos más críticos para su contexto','STEP, porque obliga a mejorar todo en orden','Ninguno, porque hay que mejorarlo todo a la vez','TMMi, porque permite elegir cualquier nivel sin orden','CTP sirve justamente para enfocarse en los procesos críticos.','¿Qué modelo habla de lo «crítico»?'],
+ ['Antes de programar su nueva máquina, Bowser escribe casos de prueba a partir de los requerimientos y descubre 3 requerimientos ambiguos. ¿Qué está aplicando?','STEP: «test then code», basado en requerimientos','CTP, en la fase Perfeccionar','Pruebas únicamente en producción','La gestión de cambios de TMMi','Diseñar pruebas antes de codificar desde los requerimientos es la esencia de STEP.','Primero la prueba, luego el código.'],
+ ['Los Koopas reciben versiones del software sin ningún control y nadie sabe qué versión se probó. ¿Qué proceso de CTP falla y en qué fase?','Gestión de entregas a prueba, en la fase Ejecutar','Establecer el contexto, en la fase Planificar','Desarrollo del equipo, en la fase Preparar','Estimación de pruebas, en la fase Perfeccionar','La gestión de entregas (releases) a prueba es el proceso 8, en Ejecutar.','Habla de «versiones» que llegan a pruebas.'],
+ ['Bowser ya ejecutó sus pruebas y ahora quiere saber si su conjunto de pruebas cubre lo necesario. ¿Qué actividad de STEP es esa?','Medir (verificar la adecuación de las pruebas)','Planificar la estrategia','Adquirir el testware','Reporte de resultados de CTP','Medir = ejecutar, verificar la adecuación y evaluar.','Ya hay resultados: toca…']
+ ]}
+];
+
+/* ============================ ESTADO ============================ */
+var KEY='pika-rescate-v1';
+function freshState(){return {best:{},sec:0,seen:{},mini:{}};}
+var S=freshState();
+try{var raw=localStorage.getItem(KEY);if(raw){var o=JSON.parse(raw);if(o&&o.best){S=o;S.seen=S.seen||{};S.sec=S.sec||0;S.mini=S.mini||{};}}}catch(e){}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}}
+var run=null;
+var app=document.getElementById('app');
+var reduced=false;try{reduced=window.matchMedia('(prefers-reduced-motion: reduce)').matches;}catch(e){}
+setInterval(function(){if(document.hidden)return;S.sec++;if(S.sec%10===0)save();updHud();},1000);
+
+/* ============================ UTILIDADES ============================ */
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function fmt(s){var m=Math.floor(s/60),r=s%60;return (m<10?'0':'')+m+':'+(r<10?'0':'')+r;}
+function shuffle(a){a=a.slice();for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=a[i];a[i]=a[j];a[j]=t;}return a;}
+function pick(a){return a[Math.floor(Math.random()*a.length)];}
+function totalPts(){var t=bonusPts();for(var k in S.best)t+=S.best[k].pts;return t;}
+function totalStars(){var t=0;for(var k in S.best)t+=S.best[k].stars;return t;}
+function unlocked(i){return i===0||!!S.best[i-1];}
+function locksOpen(){var n=0;for(var i=0;i<8;i++)if(S.best[i])n++;return n;}
+function $(id){return document.getElementById(id);}
+function updHud(){
+  $('htime').textContent='⏱ '+fmt(S.sec);
+  $('hcoins').textContent='🪙 '+(totalPts()+(run&&run.pts?run.pts:0));
+  var full='';for(var i=0;i<8;i++)full+=S.best[i]?'🔓':'🔒';
+  if(S.best[8])full+=' ⚡';
+  $('hlocks').innerHTML='<span class="full">'+full+'</span><span class="short">🔓 '+locksOpen()+'/8'+(S.best[8]?' ⚡':'')+'</span>';
+  $('hlocks').setAttribute('aria-label','Cerraduras abiertas: '+locksOpen()+' de 8');
+}
+function setLevel(t){$('hlevel').textContent=t||'';}
+function show(html){app.innerHTML=html;window.scrollTo(0,0);var h=app.querySelector('h1,h2');if(h){h.setAttribute('tabindex','-1');try{h.focus({preventScroll:true});}catch(e){}}}
+function flash(){if(reduced)return;var f=document.createElement('div');f.className='flash';document.body.appendChild(f);setTimeout(function(){f.remove();},800);}
+function modal(text,yes,no,onYes){
+  var bg=document.createElement('div');bg.className='modal-bg';
+  bg.innerHTML='<div class="panel modal pop" role="dialog" aria-modal="true" aria-labelledby="mt"><h2 id="mt">¿Seguro?</h2><p>'+esc(text)+'</p><div class="row"><button class="btn red" id="my">'+esc(yes)+'</button><button class="btn ghost" id="mn">'+esc(no)+'</button></div></div>';
+  document.body.appendChild(bg);var close=function(){bg.remove();};
+  bg.querySelector('#my').onclick=function(){close();onYes();};
+  bg.querySelector('#mn').onclick=close;
+  bg.addEventListener('keydown',function(e){if(e.key==='Escape')close();});
+  bg.querySelector('#mn').focus();
+}
+function avatar(c,extra){return '<span class="av" style="background:'+c.c+'40;'+(extra||'')+'" aria-hidden="true">'+c.e+'</span>';}
+
+/* Preguntas con la respuesta correcta repartida de forma balanceada entre A–D */
+function buildQs(arr){
+  var perm=shuffle([0,1,2,3]),pos=[];for(var i=0;i<arr.length;i++)pos.push(perm[i%4]);pos=shuffle(pos);
+  return arr.map(function(q,idx){
+    var wrong=shuffle([q[2],q[3],q[4]]),opts=[],w=0,p=pos[idx];
+    for(var k=0;k<4;k++)opts.push(k===p?{t:q[1],ok:true}:{t:wrong[w++],ok:false});
+    return {q:q[0],opts:opts,e:q[5],h:q[6]};
+  });
+}
+function finalPool(){
+  var pool=[];LV.forEach(function(l){if(!l.final)l.preguntas.forEach(function(q){pool.push(q);});});
+  return shuffle(LV[8].preguntas.concat(shuffle(pool).slice(0,7)));
+}
+
+/* ============================ PANTALLAS ============================ */
+var sceneKey=null,quizKey=null;
+document.addEventListener('keydown',function(e){
+  if(document.querySelector('.modal-bg'))return;
+  if(e.target&&e.target.tagName==='BUTTON'&&(e.key==='Enter'||e.key===' '))return;
+  if(sceneKey&&document.querySelector('.stage'))sceneKey(e);
+  else if(quizKey&&document.querySelector('.opts'))quizKey(e);
+});
+
+/* ----- portada ----- */
+function title(){
+  run=null;sceneKey=quizKey=null;setLevel('');updHud();
+  var cont=Object.keys(S.best).length>0;
+  var cast=['M','L','Y','K','D','P','B'].map(function(k){var c=CH[k];return '<span class="mini">'+avatar(c)+c.n+(k==='B'?' <span class="mut small">(villano)</span>':'')+'</span>';}).join('');
+  show('<div class="panel pop"><div class="hero"><div>'+
+   '<div class="kick">Pruebas de software · Modelos de proceso de pruebas</div>'+
+   '<h1>Operación<br>Pika-Rescate</h1>'+
+   '<p style="font-size:19px;margin:0;font-weight:700">El Reino de los Procesos de Prueba</p>'+
+   '<p style="margin-top:12px">Bowser y Mewtwo encerraron a <b>Pikachu</b> en el <b>Castillo de los Bugs</b>. La jaula tiene <b>8 cerraduras</b> y solo se abren dominando los modelos de proceso de pruebas <b>CTP</b> y <b>STEP</b>. Viaja con Mario, Link, Yoshi, Kirby y Donkey Kong por 8 mundos, aprende la teoría y derrota a Bowser en la batalla final.</p>'+
+   '</div><div class="cagebox"><div class="cage" aria-label="Pikachu en la jaula"><span>⚡</span><span class="padl">🔒</span></div></div></div>'+
+   '<div class="cast-row">'+cast+'</div>'+
+   '<div class="howto"><h3>Cómo se juega (~45 min)</h3><ul class="list">'+
+   '<li><b>8 mundos + batalla final.</b> En cada mundo lees la teoría como una historia, revisas el inventario (resumen) y respondes <b>6 preguntas</b>.</li>'+
+   '<li>Tienes <b>3 corazones ❤️</b> por nivel y dos comodines por nivel: <b>🍄 Superhongo 50/50</b> y <b>⭐ Pista de Link</b>.</li>'+
+   '<li>Las opciones se barajan siempre. Ganas <b>Power Stars ★</b> según tus errores y <b>monedas 🪙</b> por racha.</li>'+
+   '<li>Los mundos 2-1 y 3-2 traen un <b>mini-reto 🧩</b> de clasificar que da monedas extra sin quitar vidas.</li>'+
+   '<li>Atajos: ← → Espacio/Enter en la historia; A–D o 1–4 para responder.</li></ul></div>'+
+   '<div class="row" style="margin-top:22px"><button class="btn red" id="go">'+(cont?'▶ Continuar':'▶ ¡Let\'s-a go!')+'</button>'+
+   (cont?'<button class="btn ghost" id="reset">Empezar de cero</button>':'')+'</div>'+
+   '<p class="disc">🎮 Juego educativo hecho por fans con fines académicos. No está afiliado a Nintendo, Game Freak ni The Pokémon Company. Los personajes pertenecen a sus respectivos dueños.</p>'+
+   '<div class="credits"><span>👾 Desarrollado por:</span>'+EQUIPO.map(function(n){return '<span class="nm">'+esc(n)+'</span>';}).join('')+'</div></div>');
+  $('go').onclick=map;
+  var r=$('reset');if(r)r.onclick=function(){modal('Se borrará todo tu progreso, estrellas y monedas.','Sí, borrar','Cancelar',function(){S=freshState();save();title();});};
+}
+
+/* ----- mapa ----- */
+function map(){
+  run=null;sceneKey=quizKey=null;setLevel('Mapa del mundo');updHud();
+  var done=Object.keys(S.best).length,pct=Math.round(done/LV.length*100);
+  var h='<div class="panel pop"><h2>🗺️ Mapa del mundo</h2><p class="mut" style="margin-top:0">Completa cada mundo para abrir el siguiente y una cerradura de la jaula. Puedes repetirlos para mejorar tus estrellas.</p>'+
+    '<div class="row" style="margin:10px 0 22px"><div class="bar" style="flex:1;min-width:200px" role="progressbar" aria-valuenow="'+pct+'" aria-valuemin="0" aria-valuemax="100"><i style="width:'+pct+'%"></i></div><span class="small"><b>'+done+' / '+LV.length+'</b> niveles · <b>'+totalStars()+'</b> ★ de '+LV.length*3+'</span></div>'+
+    '<div class="mapwrap" id="mapwrap"><svg aria-hidden="true"></svg>';
+  LV.forEach(function(l,i){
+    var b=S.best[i],lock=!unlocked(i),st=b?'★'.repeat(b.stars)+'☆'.repeat(3-b.stars):'☆☆☆';
+    h+='<button class="tile'+(lock?' lock':'')+(b?' done':'')+(l.final?' final':'')+'" data-i="'+i+'" '+(lock?'disabled aria-label="Nivel bloqueado"':'')+'>'+
+      (b?'<span class="badge" aria-hidden="true">✓</span>':'')+
+      '<span class="n">'+(l.final?'FINAL':'MUNDO '+l.mundo)+'</span><div class="e" aria-hidden="true">'+(lock?'🔒':l.e)+'</div><b>'+esc(l.t)+'</b><div class="stars" aria-label="'+(b?b.stars:0)+' de 3 estrellas">'+st+'</div></button>';
+  });
+  h+='</div><div class="row" style="margin-top:24px"><button class="btn" id="bonus">🎮 Zona bonus</button><button class="btn ghost" id="home">⌂ Portada</button></div></div>';
+  show(h);
+  [].forEach.call(app.querySelectorAll('.tile:not(.lock)'),function(b){b.onclick=function(){levelIntro(+b.dataset.i);};});
+  $('home').onclick=title;
+  $('bonus').onclick=function(){bonusHub(map);};
+  drawPath();
+}
+function drawPath(){
+  var w=$('mapwrap');if(!w)return;
+  var svg=w.querySelector('svg'),r=w.getBoundingClientRect();
+  var pts=[].map.call(w.querySelectorAll('.tile'),function(t){var b=t.getBoundingClientRect();return Math.round(b.left-r.left+b.width/2)+','+Math.round(b.top-r.top+b.height/2);});
+  svg.setAttribute('width',r.width);svg.setAttribute('height',r.height);
+  svg.innerHTML='<polyline points="'+pts.join(' ')+'" fill="none" stroke="#1B1B2F" stroke-width="6" stroke-dasharray="2 14" stroke-linecap="round" stroke-linejoin="round"/>';
+}
+window.addEventListener('resize',drawPath);
+
+/* ----- intro de nivel ----- */
+function levelIntro(i){
+  var l=LV[i];run=null;sceneKey=quizKey=null;
+  setLevel((l.final?'Final':'Mundo '+l.mundo)+' · '+l.t);updHud();
+  show('<div class="panel center pop" style="padding:34px 20px"><div class="big" aria-hidden="true">'+l.e+'</div>'+
+   '<div class="kick" style="margin-top:10px">'+(l.final?'Batalla final':'Mundo '+l.mundo)+'</div>'+
+   '<h2 style="margin:10px 0">'+esc(l.t)+'</h2><p class="mut">📍 '+esc(l.lugar)+'</p>'+
+   '<div class="row c" style="margin-top:18px"><button class="btn red" id="th">📖 Teoría</button>'+
+   (S.seen[i]?'<button class="btn" id="sk">⏭ Ir a preguntas</button>':'')+
+   '<button class="btn ghost" id="bk">← Mapa</button></div></div>');
+  $('th').onclick=function(){scene(i,0);};
+  var sk=$('sk');if(sk)sk.onclick=function(){startQuiz(i,0);};
+  $('bk').onclick=map;
+}
+
+/* ----- teoría como historia ----- */
+var typer=null;
+function renderSpecial(sc){
+  if(sc[0]==='pergamino'){
+    var body;
+    if(Array.isArray(sc[2])){
+      body='<div class="tblw"><table class="tbl"><thead><tr>'+sc[2][0].map(function(c){return '<th scope="col">'+esc(c)+'</th>';}).join('')+'</tr></thead><tbody>'+
+        sc[2].slice(1).map(function(r){return '<tr>'+r.map(function(c,j){return j===0?'<th scope="row" style="background:#f0dcb6;color:#3d2508">'+esc(c)+'</th>':'<td>'+esc(c)+'</td>';}).join('')+'</tr>';}).join('')+'</tbody></table></div>';
+    }else body='<p>'+esc(sc[2])+'</p>';
+    return '<div class="scroll"><h3>📜 Pergamino · '+esc(sc[1])+'</h3>'+body+'</div>';
+  }
+  return '<div class="chalk"><h3>🧑‍🏫 Pizarra · '+esc(sc[1])+'</h3><pre>'+esc(sc[2])+'</pre></div>';
+}
+function scene(i,k){
+  var l=LV[i],sc=l.escenas[k];clearInterval(typer);quizKey=null;
+  setLevel((l.final?'Final':'Mundo '+l.mundo)+' · Historia');
+  var special=(sc[0]==='pergamino'||sc[0]==='pizarra');
+  var dots=l.escenas.map(function(_,x){return '<i class="'+(x<k?'on':x===k?'cur':'')+'"></i>';}).join('');
+  var last=k===l.escenas.length-1;
+  var inner;
+  if(special)inner=renderSpecial(sc);
+  else{var c=CH[sc[0]];inner='<div class="talk"><div class="who">'+avatar(c,'border-color:var(--ink)')+'<b>'+esc(c.n)+'</b></div>'+
+    '<div class="bubble" id="bub"><span id="tx" aria-hidden="true"></span><span class="sr-only">'+esc(c.n)+': '+esc(sc[1])+'</span><span class="more" id="more" aria-hidden="true" style="display:none">▼</span></div></div>';}
+  show('<section class="panel stage pop" aria-label="Historia"><h2 class="sr-only">Escena '+(k+1)+'</h2><div class="place">📍 '+esc(l.lugar)+' · escena '+(k+1)+' de '+l.escenas.length+'</div>'+inner+
+   '<div class="ctrl"><button class="btn ghost sm" id="pv" '+(k===0?'disabled':'')+' aria-label="Escena anterior">◀</button><div class="dots" aria-hidden="true">'+dots+'</div>'+
+   '<button class="btn sm" id="nx">'+(last?'🎒 Inventario ▶':'Siguiente ▶')+'</button></div></section>');
+  var done=true;
+  if(!special){
+    var tx=$('tx'),txt=sc[1];done=false;
+    var finish=function(){clearInterval(typer);tx.textContent=txt;done=true;$('more').style.display='inline';};
+    if(reduced)finish();
+    else{var n=0;typer=setInterval(function(){n+=2;tx.textContent=txt.slice(0,n);if(n>=txt.length)finish();},16);}
+    $('bub').onclick=function(){if(!done)finish();else next();};
+  }
+  function next(){if(!done){finish();return;}clearInterval(typer);if(!last)scene(i,k+1);else recap(i);}
+  $('nx').onclick=next;
+  $('pv').onclick=function(){if(k>0)scene(i,k-1);};
+  sceneKey=function(e){
+    if(e.key==='ArrowRight'||e.key===' '||e.key==='Enter'){e.preventDefault();next();}
+    else if(e.key==='ArrowLeft'&&k>0){e.preventDefault();scene(i,k-1);}
+  };
+}
+
+/* ----- inventario (resumen) ----- */
+function recap(i){
+  var l=LV[i];sceneKey=null;clearInterval(typer);S.seen[i]=1;save();
+  setLevel((l.final?'Final':'Mundo '+l.mundo)+' · Inventario');
+  var nextLbl=l.final?'🔥 Enfrentar a Bowser':l.reto?'🧩 Mini-reto':'🎯 ¡A las preguntas!';
+  show('<div class="panel pop"><h2>🎒 Inventario del nivel</h2><p class="mut" style="margin-top:0">Lo esencial antes de las preguntas:</p><ul class="list">'+
+   l.resumen.pts.map(function(p){return '<li>'+esc(p)+'</li>';}).join('')+'</ul>'+
+   '<h3 style="margin-top:18px">⭐ Power-ups desbloqueados</h3><div>'+l.resumen.powerups.map(function(t){return '<span class="chip">'+esc(t)+'</span>';}).join('')+'</div>'+
+   '<div class="row" style="margin-top:22px"><button class="btn red" id="q">'+nextLbl+'</button><button class="btn ghost" id="re">↺ Repasar historia</button></div></div>');
+  $('q').onclick=function(){if(l.reto)reto(i);else startQuiz(i,0);};
+  $('re').onclick=function(){scene(i,0);};
+}
+
+/* ----- mini-reto de clasificar ----- */
+function reto(i){
+  var l=LV[i],R=l.reto;sceneKey=quizKey=null;
+  setLevel('Mundo '+l.mundo+' · Mini-reto');
+  var st={items:shuffle(R.items.map(function(it,idx){return {t:it[0],c:it[1],id:idx,at:-1};})),sel:null,checked:false,bonus:0};
+  function byId(id){for(var x=0;x<st.items.length;x++)if(st.items[x].id===id)return st.items[x];}
+  function place(id,z){var it=byId(id);if(!it||st.checked)return;it.at=z;st.sel=null;render();}
+  function card(it){
+    var cls='rcard'+(st.sel===it.id?' sel':'')+(st.checked?(it.at===it.c?' ok':' no'):'');
+    var extra=st.checked&&it.at!==it.c?'<small>→ va en: '+esc(R.cats[it.c])+'</small>':'';
+    return '<button class="'+cls+'" draggable="'+(!st.checked)+'" data-id="'+it.id+'" aria-pressed="'+(st.sel===it.id)+'">'+(st.checked?(it.at===it.c?'✅ ':'❌ '):'')+esc(it.t)+extra+'</button>';
+  }
+  function render(first){
+    var pool=st.items.filter(function(it){return it.at===-1;});
+    var html='<div class="panel'+(first?' pop':'')+'"><div class="kick">Mini-reto 🧩</div><h2 style="margin-top:8px">'+esc(R.titulo)+'</h2>'+
+      '<p class="mut" style="margin-top:0">Toca una tarjeta y luego la categoría (o arrástrala). Tocar una tarjeta ya colocada la devuelve. <b>No quita vidas:</b> cada acierto da +20 🪙.</p>'+
+      '<div class="pool" id="pool" aria-label="Tarjetas sin clasificar">'+(pool.length?pool.map(card).join(''):'<span class="mut small">¡Todas las tarjetas están colocadas!</span>')+'</div>'+
+      '<div class="zones">'+R.cats.map(function(c,z){return '<div class="zone" data-z="'+z+'"><button class="btn sm zh" data-z="'+z+'">'+esc(c)+'</button>'+st.items.filter(function(it){return it.at===z;}).map(card).join('')+'</div>';}).join('')+'</div>'+
+      '<div id="rfb" aria-live="polite"></div>'+
+      '<div class="row" style="margin-top:18px">'+(st.checked?'<button class="btn red" id="rgo">🎯 ¡A las preguntas!</button>':'<button class="btn red" id="rchk" '+(pool.length?'disabled':'')+'>✔ Comprobar</button><button class="btn ghost" id="rskip">Saltar reto</button>')+'</div></div>';
+    app.innerHTML=html;
+    if(st.checked){
+      var ok=st.items.filter(function(it){return it.at===it.c;}).length;
+      $('rfb').innerHTML='<div class="fb '+(ok===st.items.length?'ok':'pk')+'">'+avatar(CH.P)+'<div><b>'+(ok===st.items.length?'¡Pika pika! ¡Perfecto!':'¡Pika! ¡Buen intento!')+' '+ok+' / '+st.items.length+' correctas · +'+st.bonus+' 🪙</b><span>'+(ok===st.items.length?'¡Clasificaste todo bien! Ya estás listo para las preguntas.':'Las tarjetas en rojo muestran su fase correcta. Repásalas antes de las preguntas.')+'</span></div></div>';
+      $('rgo').onclick=function(){startQuiz(i,st.bonus);};
+      return;
+    }
+    [].forEach.call(app.querySelectorAll('.rcard'),function(b){
+      b.onclick=function(e){e.stopPropagation();var it=byId(+b.dataset.id);if(it.at!==-1){it.at=-1;st.sel=null;}else st.sel=(st.sel===it.id?null:it.id);render();};
+      b.ondragstart=function(e){try{e.dataTransfer.setData('text/plain',b.dataset.id);}catch(x){}st.sel=+b.dataset.id;};
+    });
+    [].forEach.call(app.querySelectorAll('.zone'),function(z){
+      z.onclick=function(){if(st.sel!==null)place(st.sel,+z.dataset.z);};
+      z.ondragover=function(e){e.preventDefault();z.classList.add('over');};
+      z.ondragleave=function(){z.classList.remove('over');};
+      z.ondrop=function(e){e.preventDefault();var id=+(e.dataTransfer.getData('text/plain')||st.sel);place(id,+z.dataset.z);};
+    });
+    var pl=$('pool');
+    pl.ondragover=function(e){e.preventDefault();};
+    pl.ondrop=function(e){e.preventDefault();var it=byId(+(e.dataTransfer.getData('text/plain')||st.sel));if(it){it.at=-1;st.sel=null;render();}};
+    $('rchk').onclick=function(){
+      st.checked=true;st.bonus=st.items.filter(function(it){return it.at===it.c;}).length*20;
+      if(st.bonus)flash();render();updHud();
+    };
+    $('rskip').onclick=function(){startQuiz(i,0);};
+  }
+  render(true);window.scrollTo(0,0);
+}
+
+/* ----- preguntas ----- */
+function startQuiz(i,bonus){
+  var l=LV[i];sceneKey=null;clearInterval(typer);
+  var qs=buildQs(l.final?finalPool():shuffle(l.preguntas));
+  run={i:i,pts:bonus||0,lives:3,idx:0,ok:0,wrong:0,streak:0,h50:true,hint:true,qs:qs,answered:false,boss:l.final?{hp:10,max:10}:null};
+  setLevel((l.final?'Final':'Mundo '+l.mundo)+' · Preguntas');showQ();
+}
+function showQ(){
+  var r=run,q=r.qs[r.idx],L='ABCD';r.answered=false;
+  var hearts='❤️'.repeat(r.lives)+'🖤'.repeat(3-r.lives);
+  var boss=r.boss?'<div class="boss">'+avatar(CH.B)+'<b>BOWSER</b><div class="bar bossbar" role="progressbar" aria-label="Vida de Bowser" aria-valuenow="'+r.boss.hp+'" aria-valuemin="0" aria-valuemax="'+r.boss.max+'"><i id="bhp" style="width:'+(r.boss.hp/r.boss.max*100)+'%"></i></div></div>':'';
+  show('<div class="pop"><div class="panel" id="qcard">'+boss+
+   '<div class="qtop"><span class="pill">Pregunta '+(r.idx+1)+' / '+r.qs.length+'</span><span class="hearts" aria-label="'+r.lives+' vidas">'+hearts+'</span><span class="pill">🔥 Racha '+r.streak+'</span><span class="sp"></span>'+
+   '<button class="btn sm" id="h5" '+(r.h50?'':'disabled')+'>🍄 Superhongo 50/50</button><button class="btn sm ghost" id="hl" '+(r.hint?'':'disabled')+'>⭐ Pista de Link</button></div>'+
+   '<div class="bar" style="margin-bottom:16px"><i style="width:'+(r.idx/r.qs.length*100)+'%"></i></div>'+
+   '<h2 class="q" style="font-family:var(--body);font-size:20px">'+esc(q.q)+'</h2><div class="opts" id="opts">'+
+   q.opts.map(function(o,k){return '<button class="opt" data-k="'+k+'"><span class="l">'+L[k]+'</span><span>'+esc(o.t)+'</span></button>';}).join('')+
+   '</div><div id="hint" aria-live="polite"></div><div id="fb" aria-live="polite"></div></div></div>');
+  [].forEach.call(app.querySelectorAll('.opt'),function(b){b.onclick=function(){answer(+b.dataset.k);};});
+  $('h5').onclick=function(){
+    if(!r.h50||r.answered)return;r.h50=false;this.disabled=true;
+    var wr=[];q.opts.forEach(function(o,k){if(!o.ok)wr.push(k);});
+    shuffle(wr).slice(0,2).forEach(function(k){var b=app.querySelector('.opt[data-k="'+k+'"]');b.classList.add('gone');b.disabled=true;});
+  };
+  $('hl').onclick=function(){
+    if(!r.hint||r.answered)return;r.hint=false;this.disabled=true;
+    $('hint').innerHTML='<div class="hintbox pop">🗡️ <b>Link susurra:</b> '+esc(q.h||'Repasa el inventario del nivel.')+'</div>';
+  };
+  quizKey=function(e){
+    var m={a:0,b:1,c:2,d:3,'1':0,'2':1,'3':2,'4':3}[String(e.key).toLowerCase()];
+    if(m!==undefined&&!r.answered){var b=app.querySelector('.opt[data-k="'+m+'"]');if(b&&!b.disabled)answer(m);}
+    else if(r.answered&&(e.key==='Enter'||e.key===' ')){e.preventDefault();var n=$('nq');if(n)n.click();}
+  };
+  updHud();
+}
+var GOOD={M:'¡Wahoo!',L:'¡Hyaaah!',Y:'¡Yoshi!',K:'¡Poyo, poyo!',D:'¡Banana-tástico!',P:'¡Pika pika!'};
+var BAD={M:'¡Mamma mia, casi!',L:'Hmm… no era ese camino.',Y:'¡Yoshi… no!',K:'¡Poyo… casi!',D:'¡Oops, DK resbaló con una banana!',P:'¡Pika… no era!'};
+function answer(k){
+  var r=run,q=r.qs[r.idx];if(r.answered)return;r.answered=true;
+  var good=q.opts[k].ok,chosen=app.querySelector('.opt[data-k="'+k+'"]');
+  [].forEach.call(app.querySelectorAll('.opt'),function(b){var o=q.opts[+b.dataset.k];b.disabled=true;if(o.ok)b.classList.add('ok');else if(+b.dataset.k===k)b.classList.add('no');});
+  $('h5').disabled=true;$('hl').disabled=true;
+  var key=pick(['M','L','Y','K','D','P']),who=CH[key],gain=0;
+  if(good){
+    r.ok++;r.streak++;gain=100+Math.min(r.streak-1,5)*10;r.pts+=gain;
+    if(!reduced){var c=document.createElement('span');c.className='coinpop';c.textContent='🪙';chosen.appendChild(c);}
+    if(r.boss){r.boss.hp=Math.max(0,r.boss.hp-1);var bh=$('bhp');if(bh)bh.style.width=(r.boss.hp/r.boss.max*100)+'%';}
+  }else{
+    r.wrong++;r.lives--;r.streak=0;
+    var card=$('qcard');card.classList.remove('shake');void card.offsetWidth;card.classList.add('shake');
+  }
+  updHud();
+  var dead=r.lives<=0,last=r.idx>=r.qs.length-1;
+  var btn=dead?'<button class="btn red" id="nq">Ver resultado</button>':'<button class="btn" id="nq">'+(last?'Terminar nivel ▶':'Siguiente ▶')+'</button>';
+  $('fb').innerHTML='<div class="fb pop '+(good?'ok':'no')+'">'+avatar(who)+'<div><b>'+(good?GOOD[key]+' +'+gain+' 🪙':BAD[key]+' Pierdes un corazón 💔')+'</b><span>'+esc(q.e)+'</span><div class="small mut" style="margin-top:4px">— '+esc(who.n)+'</div></div></div><div class="row" style="margin-top:14px">'+btn+'</div>';
+  $('nq').onclick=function(){if(dead||last)result();else{r.idx++;showQ();}};
+  $('nq').focus();
+}
+
+/* ----- resultado ----- */
+var PIKA=['¡Pika pika! ¡Una cerradura menos!','¡Pikachuuu! ¡Ya casi salgo!','¡Pika! ¡Son los mejores entrenadores de QA!','¡Pika, pika! ¡Siento que la jaula se debilita!'];
+function result(){
+  var r=run,l=LV[r.i],i=r.i;quizKey=null;
+  var failed=r.lives<=0;
+  var stars=failed?0:(r.wrong===0?3:r.wrong===1?2:1);
+  if(failed){
+    setLevel('Game Over');
+    show('<div class="panel center pop" style="padding:34px"><h2 class="gameover">GAME OVER</h2><div class="big" aria-hidden="true">💔</div>'+
+     '<p>Respondiste <b>'+r.ok+'</b> bien antes de quedarte sin corazones. '+(l.final?'¡Bowser se ríe, pero no por mucho tiempo!':'¡Bowser se ríe desde su castillo!')+' Repasa la historia o inténtalo de nuevo: las opciones se vuelven a barajar.</p>'+
+     '<div class="row c" style="margin-top:16px"><button class="btn red" id="rt">↺ Reintentar</button><button class="btn" id="rv">📖 Repasar teoría</button><button class="btn ghost" id="mp">Mapa</button></div></div>');
+    $('rt').onclick=function(){startQuiz(i,0);};
+    $('rv').onclick=function(){scene(i,0);};
+    $('mp').onclick=map;run=null;updHud();return;
+  }
+  var prev=S.best[i];
+  S.best[i]={pts:Math.max(prev?prev.pts:0,r.pts),stars:Math.max(prev?prev.stars:0,stars)};
+  save();var gained=r.pts;run=null;updHud();
+  setLevel(l.final?'¡Bowser derrotado!':'Mundo '+l.mundo+' completado');
+  var msg=stars===3?'¡Perfecto! ¡Ni un solo error!':stars===2?'¡Muy bien jugado!':'¡Pasaste raspando, pero pasaste!';
+  var head=l.final?'<div class="big" aria-hidden="true">🐢💥</div><div class="kick" style="margin-top:8px">Batalla final</div><h2 style="margin:8px 0">¡Bowser ha sido derrotado!</h2>':
+    '<div class="lockbox" aria-hidden="true"><span class="lk" id="lk">🔒</span><span class="bolt">⚡</span></div><div class="kick">Mundo '+l.mundo+' completado · Cerradura '+(i+1)+' de 8</div><h2 style="margin:8px 0">'+esc(l.t)+'</h2>';
+  show('<div class="panel center pop" style="padding:30px">'+head+
+   '<div class="stars-big" aria-label="'+stars+' de 3 estrellas">'+'★'.repeat(stars)+'☆'.repeat(3-stars)+'</div><p style="margin-top:6px;font-weight:800">'+msg+'</p>'+
+   '<div style="margin:10px 0"><span class="stat"><b>'+r.ok+' / '+r.qs.length+'</b>aciertos</span><span class="stat"><b>'+gained+'</b>monedas</span><span class="stat"><b>'+r.lives+' ❤️</b>vidas</span></div>'+
+   '<div class="fb pk" style="text-align:left;max-width:560px;margin:12px auto">'+avatar(CH.P)+'<div><b>Pikachu dice:</b><span>'+(l.final?'¡PIKA PIKA! ¡La jaula se está abriendo!':pick(PIKA))+'</span></div></div>'+
+   '<div class="row c" style="margin-top:14px">'+(l.final?'<button class="btn red" id="nx">⚡ Liberar a Pikachu</button>':'<button class="btn red" id="nx">Siguiente mundo ▶</button>')+
+   (BONUS_WORLD_END.indexOf(i)>=0?'<button class="btn" id="bn">🎁 Nivel bonus</button>':'')+'<button class="btn" id="rp">↺ Repetir</button><button class="btn ghost" id="mp">Mapa</button></div></div>');
+  if(!l.final)setTimeout(function(){var lk=$('lk');if(lk){lk.textContent='🔓';flash();}},reduced?0:450);
+  $('nx').onclick=function(){if(l.final)rescue();else levelIntro(i+1);};
+  $('rp').onclick=function(){levelIntro(i);};
+  $('mp').onclick=map;
+  var bn=$('bn');if(bn)bn.onclick=function(){bonusHub(function(){levelIntro(i+1);});};
+  if(stars===3)setTimeout(function(){confetti(40);},400);
+}
+
+/* ----- rescate y final ----- */
+function rescue(){
+  setLevel('¡Pika-Rescate!');updHud();flash();confetti(80);
+  show('<div class="panel center pop" style="padding:36px"><div class="cage open" style="margin:0 auto 10px;width:110px;height:110px;font-size:40px" aria-hidden="true"><span>🔓</span></div>'+
+   '<div class="rescue" aria-hidden="true">⚡</div><h1 style="color:var(--red);text-shadow:2px 2px 0 var(--pika)">¡PIKA-RESCATE COMPLETADO!</h1>'+
+   '<p style="max-width:560px;margin:10px auto">Las 8 cerraduras se abrieron y Pikachu salió de la jaula de un salto. ¡Mario, Link, Yoshi, Kirby y DK celebran en el Reino de los Procesos de Prueba!</p>'+
+   '<div class="row c" style="margin-top:14px"><button class="btn red" id="rk">🏆 Ver mi rango</button></div></div>');
+  $('rk').onclick=ending;
+}
+function ending(){
+  run=null;setLevel('¡Fin del juego!');updHud();
+  var st=totalStars(),mx=LV.length*3,pts=totalPts();
+  var rank=st>=24?['👑','Maestro Pokémon de los Procesos de Prueba','Dominas CTP y STEP como pocos. ¡Bowser no se atreverá a volver!']:
+           st>=18?['🥇','Héroe de Hyrule QA','Muy buen nivel. Un par de repasos y serás leyenda.']:
+           st>=10?['🥈','Fontanero en entrenamiento','Vas por buen camino. Repite los mundos con menos estrellas para subir de rango.']:
+                  ['🥉','Goomba aprendiz','Te falta práctica, pero Pikachu está libre. ¡Vuelve a la teoría y repite los mundos!'];
+  show('<div class="panel center pop" style="padding:34px"><div class="big" aria-hidden="true">'+rank[0]+'</div><div class="kick" style="margin-top:8px">Tu rango</div><h1 style="margin-top:10px">'+esc(rank[1])+'</h1><p class="mut" style="max-width:560px;margin:10px auto">'+esc(rank[2])+'</p>'+
+   '<div style="margin:12px 0"><span class="stat"><b>'+st+' / '+mx+'</b>estrellas</span><span class="stat"><b>'+pts+'</b>monedas</span><span class="stat"><b>'+fmt(S.sec)+'</b>tiempo de juego</span></div>'+
+   '<div class="fb pk" style="text-align:left;margin:14px auto;max-width:620px">'+avatar(CH.P)+'<div><b>Pikachu dice:</b><span>¡Pika pika! ¡Gracias por rescatarme! Recuerden: CTP les ayuda a enfocarse en los procesos críticos y STEP a probar de forma sistemática desde el inicio. ¡Juntos son imparables!</span></div></div>'+
+   '<div class="row c" style="margin-top:16px"><button class="btn red" id="mp">🗺️ Volver al mapa</button><button class="btn ghost" id="rs">Jugar desde cero</button></div>'+
+   '<div class="credits" style="justify-content:center;margin-top:24px"><span>👾 Desarrollado por:</span>'+EQUIPO.map(function(n){return '<span class="nm">'+esc(n)+'</span>';}).join('')+'</div>'+
+   '<p class="disc" style="max-width:620px;margin:16px auto 0">🎮 Juego educativo hecho por fans con fines académicos. No está afiliado a Nintendo, Game Freak ni The Pokémon Company.</p></div>');
+  $('mp').onclick=map;
+  $('rs').onclick=function(){modal('Se borrará todo tu progreso, estrellas y monedas.','Sí, empezar de cero','Cancelar',function(){S=freshState();save();title();});};
+}
+
+/* ============================ ZONA BONUS (MINIJUEGOS) ============================
+   Dos minijuegos opcionales. Su mejor puntaje se suma a las monedas totales,
+   pero NO cambia las estrellas ni el rango final. */
+var BONUS_WORLD_END=[1,3,5,7]; // al terminar el 1-2, 2-2, 3-2 y 4-2 se ofrece un nivel bonus
+
+function bonusPts(){
+  var m=S.mini||{};
+  return (m.whack||0)+(m.memo||0);
+}
+
+/* Lluvia de confeti para celebrar (se omite con movimiento reducido) */
+function confetti(n){
+  if(reduced)return;
+  var colors=['#E52521','#FFD60A','#43B047','#5C94FC','#FF8FC7','#F77F00'];
+  for(var x=0;x<(n||40);x++){
+    var c=document.createElement('span');
+    c.className='confetti';
+    c.style.left=Math.random()*100+'vw';
+    c.style.background=colors[x%colors.length];
+    c.style.animationDuration=(1.6+Math.random()*1.6)+'s';
+    c.style.animationDelay=(Math.random()*0.5)+'s';
+    document.body.appendChild(c);
+    (function(el){setTimeout(function(){el.remove();},3800);})(c);
+  }
+}
+
+/* ----- menú de la zona bonus ----- */
+function bonusHub(onDone){
+  run=null;sceneKey=quizKey=null;
+  var back=onDone||map;
+  var m=S.mini||{};
+  setLevel('Zona bonus');updHud();
+  show('<div class="panel pop"><div class="kick">Nivel bonus 🎁</div><h2 style="margin-top:8px">Zona de minijuegos</h2>'+
+    '<p class="mut" style="margin-top:0">Gana monedas extra 🪙 para tu marcador. Los minijuegos son opcionales: no quitan corazones ni cambian tus estrellas.</p>'+
+    '<div class="bonus-grid">'+
+      '<button class="bonus-card" id="g1"><div class="e" aria-hidden="true">🐛🔨</div><b>Aplasta los Bugs</b>'+
+      '<span>Los bugs salen de las tuberías durante 20 segundos. ¡Aplástalos antes de que se escapen a producción! Pero cuidado: no golpees a Pikachu.</span>'+
+      '<div><span class="best">Récord: '+(m.whack||0)+' 🪙</span></div></button>'+
+      '<button class="bonus-card" id="g2"><div class="e" aria-hidden="true">🧱❓</div><b>Memoria de conceptos</b>'+
+      '<span>Rompe los bloques de dos en dos y une cada concepto de CTP o STEP con su significado. Menos intentos = más monedas.</span>'+
+      '<div><span class="best">Récord: '+(m.memo||0)+' 🪙</span></div></button>'+
+    '</div>'+
+    '<div class="row" style="margin-top:22px"><button class="btn ghost" id="gb">← Continuar</button></div></div>');
+  $('g1').onclick=function(){whackGame(function(){bonusHub(back);});};
+  $('g2').onclick=function(){memoGame(function(){bonusHub(back);});};
+  $('gb').onclick=back;
+}
+
+/* Guarda el récord de un minijuego y devuelve si fue un nuevo récord */
+function saveBonus(key,score){
+  S.mini=S.mini||{};
+  var isRecord=score>(S.mini[key]||0);
+  if(isRecord)S.mini[key]=score;
+  save();updHud();
+  return isRecord;
+}
+
+/* Pantalla común de fin de minijuego */
+function bonusEnd(titleTxt,score,isRecord,detail,again,onDone){
+  if(isRecord&&score>0)confetti(50);
+  show('<div class="panel center pop" style="padding:30px"><div class="big" aria-hidden="true">'+(isRecord&&score>0?'🏆':'🎁')+'</div>'+
+    '<div class="kick" style="margin-top:8px">Fin del minijuego</div><h2 style="margin:8px 0">'+esc(titleTxt)+'</h2>'+
+    '<div style="margin:10px 0"><span class="stat"><b>'+score+'</b>monedas</span>'+detail+'</div>'+
+    (isRecord&&score>0?'<p style="font-weight:800">¡Nuevo récord! Se sumó a tu marcador.</p>':'<p class="mut">Tu récord se mantiene. ¡Inténtalo otra vez!</p>')+
+    '<div class="row c" style="margin-top:14px"><button class="btn red" id="ag">↺ Jugar otra vez</button><button class="btn ghost" id="ok">Volver</button></div></div>');
+  $('ag').onclick=again;
+  $('ok').onclick=onDone;
+}
+
+/* ----- minijuego 1: Aplasta los Bugs ----- */
+function whackGame(onDone){
+  setLevel('Bonus · Aplasta los Bugs');
+  var G={score:0,time:20,hits:0,miss:0,pikaHits:0,active:-1,kind:null,over:false};
+  var holes='';
+  for(var h=0;h<9;h++)holes+='<button class="hole" data-h="'+h+'" aria-label="Tubería '+(h+1)+'"><span class="mole" aria-hidden="true"></span></button>';
+  show('<div class="panel pop"><div class="kick">Nivel bonus 🐛</div><h2 style="margin-top:8px">Aplasta los Bugs</h2>'+
+    '<p class="mut" style="margin-top:0">Toca los bugs 🐛🐞 (+10 🪙). Si tocas a Pikachu ⚡ pierdes 20. Atajo: teclas 1–9.</p>'+
+    '<div class="whack-top"><span class="pill" id="wt">⏱ 20 s</span><span class="pill" id="ws">🪙 0</span><span class="pill" id="wh">🐛 0 aplastados</span></div>'+
+    '<div class="whack-grid" id="wg">'+holes+'</div>'+
+    '<div class="row c" style="margin-top:18px"><button class="btn ghost sm" id="wq">Salir</button></div></div>');
+
+  function paint(){
+    $('wt').textContent='⏱ '+G.time+' s';
+    $('ws').textContent='🪙 '+G.score;
+    $('wh').textContent='🐛 '+G.hits+' aplastados';
+  }
+  function hide(){
+    if(G.active<0)return;
+    var el=app.querySelector('.hole[data-h="'+G.active+'"]');
+    if(el)el.classList.remove('up');
+    if(G.kind!=='pika'&&G.kind!==null)G.miss++;
+    G.active=-1;G.kind=null;
+  }
+  function popUp(){
+    if(G.over)return;
+    hide();
+    var next;
+    do{next=Math.floor(Math.random()*9);}while(next===G.lastHole);
+    G.lastHole=next;G.active=next;
+    G.kind=Math.random()<0.15?'pika':(Math.random()<0.5?'bug':'ladybug');
+    var el=app.querySelector('.hole[data-h="'+next+'"]');
+    if(!el)return;
+    el.classList.remove('hit','ouch');
+    el.querySelector('.mole').textContent=G.kind==='pika'?'⚡':G.kind==='bug'?'🐛':'🐞';
+    el.classList.add('up');
+  }
+  function floatText(el,txt){
+    var f=document.createElement('span');
+    f.className='float-pts';f.textContent=txt;
+    el.appendChild(f);
+    setTimeout(function(){f.remove();},700);
+  }
+  function whack(h){
+    if(G.over||h!==G.active)return;
+    var el=app.querySelector('.hole[data-h="'+h+'"]');
+    if(G.kind==='pika'){
+      G.score=Math.max(0,G.score-20);G.pikaHits++;
+      el.classList.add('ouch');floatText(el,'-20');
+    }else{
+      G.score+=10;G.hits++;
+      el.classList.add('hit');floatText(el,'+10');
+    }
+    G.kind=null;el.classList.remove('up');G.active=-1;
+    setTimeout(function(){el.classList.remove('hit','ouch');},350);
+    paint();
+  }
+  [].forEach.call(app.querySelectorAll('.hole'),function(b){
+    b.onclick=function(){whack(+b.dataset.h);};
+  });
+  var popTimer=setInterval(popUp,750);
+  var clock=setInterval(function(){
+    G.time--;paint();
+    if(G.time<=0)finish();
+  },1000);
+  var keyFn=function(e){
+    var n=parseInt(e.key,10);
+    if(n>=1&&n<=9)whack(n-1);
+  };
+  document.addEventListener('keydown',keyFn);
+  function stop(){
+    G.over=true;
+    clearInterval(popTimer);clearInterval(clock);
+    document.removeEventListener('keydown',keyFn);
+  }
+  function finish(){
+    stop();
+    var rec=saveBonus('whack',G.score);
+    bonusEnd('Aplasta los Bugs',G.score,rec,
+      '<span class="stat"><b>'+G.hits+'</b>bugs aplastados</span><span class="stat"><b>'+G.miss+'</b>bugs escapados</span>',
+      function(){whackGame(onDone);},onDone);
+  }
+  $('wq').onclick=function(){stop();onDone();};
+  paint();popUp();
+}
+
+/* ----- minijuego 2: Memoria de conceptos ----- */
+var MEMO_PAIRS=[
+  ['CTP','Enfocarse en los procesos críticos'],
+  ['STEP','Pruebas sistemáticas desde los requerimientos'],
+  ['DDP','% de defectos detectados antes de producción'],
+  ['Rex Black','Autor de CTP (2003)'],
+  ['Bill Hetzel','Creador de STEP junto con SQE'],
+  ['IEEE 829','Estándar de documentación de pruebas'],
+  ['Testware','Todo lo que se produce para probar'],
+  ['Test then code','Diseñar pruebas antes de programar'],
+  ['Perfeccionar','Fase de CTP: reportes y gestión de cambios'],
+  ['Medir','Actividad de STEP: ejecutar y evaluar'],
+  ['TMMi','Modelo de madurez por niveles'],
+  ['Plan Maestro','Visión general de todas las pruebas en STEP']
+];
+function memoGame(onDone){
+  setLevel('Bonus · Memoria de conceptos');
+  var pairs=shuffle(MEMO_PAIRS).slice(0,6);
+  var cards=[];
+  pairs.forEach(function(p,idx){
+    cards.push({pair:idx,txt:p[0],term:true});
+    cards.push({pair:idx,txt:p[1],term:false});
+  });
+  cards=shuffle(cards);
+  var M={open:[],found:0,moves:0,lock:false};
+  show('<div class="panel pop"><div class="kick">Nivel bonus 🧱</div><h2 style="margin-top:8px">Memoria de conceptos</h2>'+
+    '<p class="mut" style="margin-top:0">Abre dos bloques ❓: si el concepto coincide con su significado, se quedan abiertos. Encuentra las 6 parejas con la menor cantidad de intentos.</p>'+
+    '<div class="whack-top"><span class="pill" id="mm">🔁 0 intentos</span><span class="pill" id="mf">✅ 0 / 6 parejas</span></div>'+
+    '<div class="memo-grid" id="mg">'+cards.map(function(c,k){
+      return '<button class="memo'+(c.term?' term':'')+'" data-k="'+k+'" aria-label="Bloque '+(k+1)+'"><span class="back" aria-hidden="true">?</span><span class="face">'+esc(c.txt)+'</span></button>';
+    }).join('')+'</div>'+
+    '<div id="mfb" aria-live="polite"></div>'+
+    '<div class="row c" style="margin-top:18px"><button class="btn ghost sm" id="mq">Salir</button></div></div>');
+
+  function paint(){
+    $('mm').textContent='🔁 '+M.moves+' intentos';
+    $('mf').textContent='✅ '+M.found+' / 6 parejas';
+  }
+  function el(k){return app.querySelector('.memo[data-k="'+k+'"]');}
+  function flip(k){
+    if(M.lock)return;
+    var b=el(k);
+    if(!b||b.classList.contains('open')||b.classList.contains('done'))return;
+    b.classList.add('open');
+    b.setAttribute('aria-label',cards[k].txt);
+    M.open.push(k);
+    if(M.open.length<2)return;
+    M.moves++;
+    var a=M.open[0],c=M.open[1];
+    if(cards[a].pair===cards[c].pair){
+      el(a).classList.add('done');el(c).classList.add('done');
+      M.found++;M.open=[];
+      $('mfb').innerHTML='<div class="fb ok pop">'+avatar(CH.K)+'<div><b>¡Poyo! ¡Pareja encontrada!</b><span>'+esc(cards[a].term?cards[a].txt:cards[c].txt)+' → '+esc(cards[a].term?cards[c].txt:cards[a].txt)+'</span></div></div>';
+      paint();
+      if(M.found===6)setTimeout(finish,600);
+    }else{
+      M.lock=true;paint();
+      setTimeout(function(){
+        [a,c].forEach(function(k2){var x=el(k2);x.classList.remove('open');x.setAttribute('aria-label','Bloque '+(k2+1));});
+        M.open=[];M.lock=false;
+      },900);
+    }
+  }
+  [].forEach.call(app.querySelectorAll('.memo'),function(b){
+    b.onclick=function(){flip(+b.dataset.k);};
+  });
+  function finish(){
+    var score=Math.max(50,300-Math.max(0,M.moves-6)*15);
+    var rec=saveBonus('memo',score);
+    bonusEnd('Memoria de conceptos',score,rec,
+      '<span class="stat"><b>'+M.moves+'</b>intentos</span><span class="stat"><b>6 / 6</b>parejas</span>',
+      function(){memoGame(onDone);},onDone);
+  }
+  $('mq').onclick=onDone;
+  paint();
+}
+
+/* ============================ INICIO ============================ */
+updHud();title();
+</script>
+</body>
+</html>
